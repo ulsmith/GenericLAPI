@@ -1,20 +1,19 @@
 'use strict';
 
-// var MysqlService = require('./src/Service/Mysql.js');
-// var PostgresService = require('./src/Service/Postgres.js');
 var KnexService = require('./src/Service/Knex.js');
 var AuthService = require('./src/Service/Auth.js');
 
-// var PostgresMiddleware = require('./src/Middleware/Postgres.js');
 var KnexMiddleware = require('./src/Middleware/Knex.js');
 var AuthMiddleware = require('./src/Middleware/Auth.js');
 var CorsMiddleware = require('./src/Middleware/Cors.js');
 
 /**
- * Application Handler
- * Main application handler to integrate controllers to AWS method handler
- * @author Paul Smith <?????>
- * @copyright 2018 ulsmith all rights reerved
+ * @namespace API
+ * @method handler
+ * @description System application handler, talking back to lambda to bridge LAPI with AWS
+ * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
+ * @copyright 2020 Paul Smith (ulsmith) all rights reserved
+ * @license MIT
  */
 exports.handler = (event, context, callback) => {
 	// correct any headers
@@ -57,7 +56,6 @@ exports.handler = (event, context, callback) => {
     }
 	
 	// we are pretty much ready now, so lets set up some singleton services that can hold state accross the system
-
 	process.__client = {
 		origin: event.headers.Origin 
 	};
