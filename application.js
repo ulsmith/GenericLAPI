@@ -103,11 +103,11 @@ exports.handler = (event, context, callback) => {
 
 		return response;
 	}).catch((error) => {
-		if (error.name === 'Error') console.log(error);
+		console.log(999, error.name);
+		if (error.name !== 'RestError') console.log(error);
 
         // build up response
         response.statusCode = error.name === 'RestError' ? error.statusCode : 500;
-        // response.headers = { 'Content-Type': 'application/json' };
         response.body = JSON.stringify(error.name === 'RestError' ? error.message : error);
 
 		return response;
