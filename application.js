@@ -103,7 +103,6 @@ exports.handler = (event, context, callback) => {
 
 		return response;
 	}).catch((error) => {
-		console.log(999, error.name);
 		if (error.name !== 'RestError') console.log(error);
 
         // build up response
