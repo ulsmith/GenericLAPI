@@ -23,14 +23,13 @@ class User extends Model {
 
     /**
      * @public @method getFromUUID
-     * @description Get user data from UUID of user
+     * @description Get user data from UUID of user, pushed direct to UI
      * @param {String} guid The GUID to search for
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	getAuthedFromUUID(uuid) {
 		return this.db
 			.select(
-				'user.user.id',
 				'user.user.uuid',
 				'user.user_account.email',
 				'user.user_account.login_current',
@@ -44,8 +43,8 @@ class User extends Model {
 	}
 
     /**
-     * @public @method getFromUUID
-     * @description findFromCredentials
+     * @public @method getAuthedFromEmail
+     * @description Get authed user for logging in
      * @param {String} username The username to search for
      * @param {String} password The password to search for
      * @return Promise a resulting promise with an error to feed back or data to send on

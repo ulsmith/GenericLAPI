@@ -43,57 +43,13 @@ class Auth extends Middleware {
 		if (!event.headers.Authorization) return;
 
 		// get token bits
-		let tokenParts = event.headers.Authorization.split(' ');
+		if (event.headers.Authorization.split(' ')[0].toLowerCase() !== 'bearer') throw new RestError('Malformed Token due to missing "Bearer", invalid', 401);
 
-		// no bearer part
-		if (tokenParts[0].toLowerCase() !== 'bearer' || !tokenParts[1]) throw new RestError('Malformed Token, invalid', 401);
+		// dont even try to auth if path missing// need to only auth if we are authing the route, bypass non auth routes
+		console.log('make sure we verify if route is authable or public, bypass public, pull this from params on the routes somehow in the template file');
 
-		// dont even try to auth if path missing
-		if (!event.pathParameters.params) throw new RestError('Path parameters not specified', 404);
-
-		try {
-			// check for anonymous user
-			if (tokenParts[1] !== 'anonymous') throw new RestError('Failed to detect anonymous user', 401);
-
-			// generate auth
-			event['auth'] = {
-				iss: 'api',
-				aud: this.$client.origin,
-				iat: Date.now() / 1000,
-				nbf: Date.now() / 1000,
-				exp: (Date.now() / 1000) + 432000,
-				permissionDefinitionRead: this.$environment.PermissionDefinitionRead,
-				permissionUploadWrite: this.$environment.PermissionUploadWrite
-			}
-
-			event.headers.Authorization = 'Bearer anonymous';
-		} catch (error) {
-			// next try JWT auth
-			try {
-				// validate token
-				event['auth'] = jwt.verify(tokenParts[1], this.$environment.JWTKey);
-
-				// the JWT must have been issued for the origin (aud > incoming from API/other), or from the origin (iss > incoming from service)
-				if (event.auth.iss !== this.$client.origin && event.auth.aud !== this.$client.origin) throw new RestError('Origin has been changed, access denied', 401);
-
-				// if first handshake or ten minutes since last one, recycle token
-				if (event.auth.iss !== 'api' || event.auth.iat + 600 < Date.now() / 1000) {
-					event.auth.iss = 'api';
-					event.auth.iat = Date.now() / 1000;
-					event.auth.nbf = Date.now() / 1000;
-					event.auth.exp = (Date.now() / 1000) + 432000;
-					event.headers.Authorization = 'Bearer ' + jwt.sign(event.auth, this.$environment.JWTKey);
-				}
-				
-				// we always need a path to the def and indetifying params for auth mode with jwt
-				if (!event.auth.identifier || !event.auth.reference) throw new RestError('Could allow access based on identifier and reference parameters', 403);
-			} catch (error) {
-				if (error.name === 'JsonWebTokenError') throw new RestError('Token is not valid, access denied', 401);
-				if (error.name === 'TokenExpiredError') throw new RestError('Token has expired, access denied', 401);
-				if (error.name === 'RestError') throw error;
-				throw new RestError('Failed to authenticate token', 401);
-			}
-		}
+		// verify against auth service, throws restError on failure
+		return this.$services.auth.verify(event.headers.Authorization);
 	}
 }
 

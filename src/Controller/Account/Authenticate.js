@@ -31,7 +31,7 @@ class Authenticate extends Controller {
      */
 	post(event) {
 		if (!event.parsedBody.username || !event.parsedBody.password) throw new RestError('We could not log you in, please try again.', 401);
-
+console.log(9);
         return this.$services.auth.login(event.parsedBody.username, event.parsedBody.password, event.requestContext.identity.sourceIp);
 	}
 
@@ -45,7 +45,8 @@ class Authenticate extends Controller {
 	get(event) {
 		if (!event.headers.Authorization) throw new RestError('We could not verify you, logging you out.', 401);
 
-		return this.$services.auth.verify(event.headers.Authorization);
+        console.log(99);
+        return {user: this.$services.auth.user};
 	}
 }
 

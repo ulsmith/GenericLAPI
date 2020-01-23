@@ -28,19 +28,12 @@ class Cors extends Middleware {
      * @param {Object} context The lambda context
      */
 	out(response, context) {
-		// no cors request
-		if (!this.$client.origin || !this.$environment.CorsWhitelist) return;
-
-		// work out origin, is it in whitelist
-		let origin = this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) >= 0 ? this.$client.origin : '';
-
-		// update headers on way back out
-		response.headers['Access-Control-Allow-Origin'] = origin; // needs to be checked againstwhitelist
+		// update headers on way back out, for all requests that are not options (handled by API gateway directly)
+		response.headers['Access-Control-Allow-Origin'] = this.$client.origin;
 		response.headers['Access-Control-Allow-Credentials'] = 'true';
 		response.headers['Access-Control-Allow-Headers'] = 'Accept, Cache-Control, Content-Type, Content-Length, Authorization, Pragma, Expires';
 		response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
 		response.headers['Access-Control-Expose-Headers'] = 'Cache-Control, Content-Type, Authorization, Pragma, Expires';
-		response.headers['P3P'] = 'CP="ALL IND DSP COR ADM CONo CUR CUSo IVAo IVDo PSA PSD TAI TELo OUR SAMo CNT COM INT NAV ONL PHY PRE PUR UNI"';
 	}
 }
 

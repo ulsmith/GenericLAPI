@@ -95,12 +95,19 @@ class Auth extends Service {
 			}, 401);
 		}
 
+		// have we switched origins?
+		if (payload.aud !== this.$client.origin) throw new RestError('Origin / Token missmatch, invalid', 401);
+
 		let userModel = new UserModel();
 
 		return userModel.getAuthedFromUUID(payload.uuid)
 			.then((user) => {
 				if (!user) throw new RestError('User not found, please try again.', 404);
+				
+				// cache user for system use
+				this.user = user;
 
+				// return basic user details when hit directly
 				return { user: {
 					uuid: user.uuid,
 					email: user.email,

@@ -28,7 +28,10 @@ class Health extends Controller {
      * @param {*} context The context of the invocation from AWS lambda
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
-	get(event) {
+	get(event, context) {
+
+console.log(event);
+
 		return Promise.resolve({'status': 'healthy', 'dateTime': new Date()});
 	}
 }

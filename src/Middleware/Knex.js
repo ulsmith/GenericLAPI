@@ -27,8 +27,8 @@ class Knex extends Middleware {
      * @param {Object} response The outgoing response to API Gateway
      * @param {Object} context The lambda context
      */
-	out() {
-		this.$services.knex.destroy();
+	out(response, context) {
+		return this.$services.knex.destroy();
 	}
 }
 

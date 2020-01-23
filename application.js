@@ -24,13 +24,6 @@ exports.handler = (event, context, callback) => {
 	// preset a response, preset default headers
 	var response = { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }, statusCode: 200, body: JSON.stringify({})};
 
-	// is this a cors options request?
-	if (event.httpMethod.toLowerCase() === 'options') {
-		// build up response
-		Cors.invoke(event, response);
-		return callback(null, response);
-	}
-
     // no route found, through 404
     if (!!((event.pathParameters || {}).error || false)) return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.pathParameters.error + ']')});
     
@@ -53,11 +46,18 @@ exports.handler = (event, context, callback) => {
     } catch (error) {
         if (process.env.Mode === 'development') console.log(error);
         return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.resource + ']') });
-    }
-	
+	}
+
+	// lets parse over any body
+	event.parsedBody = !!event.body && event.headers['Content-Type'] === 'application/json' ? event.parsedBody = JSON.parse(event.body) : {};
+
+	// strip out params to array
+	event.params = [];
+	if (!!event.pathParameters) event.params = event.pathParameters.params.split('/');
+
 	// we are pretty much ready now, so lets set up some singleton services that can hold state accross the system
 	process.__client = {
-		origin: event.headers.Origin 
+		origin: event.headers.Origin
 	};
 
 	process.__services = {
@@ -65,37 +65,15 @@ exports.handler = (event, context, callback) => {
 		auth: new AuthService()
 	};
 
-	process.__middleware = {
-		auth: new CorsMiddleware(),
-		knex: new KnexMiddleware(),
-		auth: new AuthMiddleware(),
-	};
+	// start promise chain
+	Promise.resolve()
 
-    // lets parse over any body
-	event.parsedBody = !!event.body && event.headers['Content-Type'] === 'application/json' ? event.parsedBody = JSON.parse(event.body) : {};
-
-	// incoming middleware invoke, catch rest errors and return for things like failed auth
-	try {
-		for (const name in process.__middleware) process.__middleware[name].invoke(event, context, null);
-	} catch (error) {
-		if (error.name === 'RestError') return callback(null, { statusCode: error.code, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(error.message) });
-		throw new Error(error);
-	}
+	// incoming middleware, run synchronously as each one impacts on the next
+	.then(() => new AuthMiddleware().in(event, context))
 	
-	// strip out params to array
-	event.params = [];
-	if (!!event.pathParameters) event.params = event.pathParameters.params.split('/');
-	    
-    // call controller and wrap in try to ensure all errors captured in promise stack
-	let promise;
-	try {
-    	promise = new controller[name]()[event.httpMethod.toLowerCase()](event, context);
-	} catch (error) {
-		promise = Promise.reject(error);
-	}
-
-	// prepare output, log build errors to console
-	promise.then((payload) => {
+	// run controller and catch result
+	.then(() => new controller[name]()[event.httpMethod.toLowerCase()](event, context))
+	.then((payload) => {
         // build up response
         response.statusCode = !!payload.statusCode ? payload.statusCode : 200;
 		if (!!payload.headers) response.headers = Object.assign({}, response.headers, payload.headers);
@@ -110,15 +88,13 @@ exports.handler = (event, context, callback) => {
         response.body = JSON.stringify(error.name === 'RestError' ? error.message : error);
 
 		return response;
-	}).then((response) => {
-		// outgoing middleware
-		try {
-			for (const name in process.__middleware) process.__middleware[name].invoke(event, context, response);
-		} catch (error) {
-			if (error.name === 'RestError') return callback(null, { statusCode: error.code, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(error.message) })
-		}
-		
-		// return callback to AWS
-		callback(null, response);
-	});
+	})
+
+	// outgoing middleware, run synchronously as each one impacts on the next
+	.then(() => new KnexMiddleware().out(response, context))
+	.then(() => new CorsMiddleware().out(response, context))
+
+	// finally catch any last issues in middleware and output back to lambda
+	.catch(() => error.name !== 'RestError' ? console.log(error) : undefined)
+	.then(() => callback(null, response));
 }

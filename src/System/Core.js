@@ -30,13 +30,6 @@ class Core {
 	 * @return {Object} Services available
 	 */
 	get $services() { return process.__services }
-
-	/**
-	 * @public @get middleware
-	 * @desciption Get the middleware available to the system
-	 * @return {Object} Middleware available
-	 */
-	get $middleware() { return process.__middleware }
 }
 
 module.exports = Core;

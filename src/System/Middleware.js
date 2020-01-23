@@ -20,19 +20,6 @@ class Middleware extends Core {
 	constructor() {
 		super();
 	}
-	
-    /**
-	 * @public @method invoke
-	 * @description Invoke middleware for incomming events or outgoing responses
-     * @param {Object} event The incoming event form API Gateway
-     * @param {Object} context The lambda context
-     * @param {Mixed} response The response object going back out the system to API gateway (if outgoing)
-     */
-	invoke(event, context, response) {
-		// incoming only
-		if (!!this.in && !response) this.in(event, context);
-		if (!!this.out && !!response) this.out(response, context);
-	}
 }
 
 module.exports = Middleware;
