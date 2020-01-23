@@ -44,16 +44,20 @@ class Auth extends Service {
 			// NOTE: need to flood prevent here too
 			if (!user) throw new RestError('Login details incorrect, please try again...', 401);
             if (user.password !== Crypto.passwordHash(password, user.password.substring(0, user.password.length / 2))) throw new RestError('Login details incorrect, please try again...', 401);
-
-            return user;
+			
+			return user;
 		}).then((user) => {
 			let date = new Date();
 
 			// update user but return data from before update so last logged on correct
-			return userAccountModel.update(user.id, {last_logged_in: date }).then((update) => {
-				// console.log('update', update);
-				return { email: user.email, logged_in: date, last_logged_in: user.last_logged_in };
-			});
+			return userAccountModel
+				.update(user.id, { login_current: date , login_previous: user.login_current })
+				.then((update) => ({
+					uuid: user.uuid, 
+					email: user.email, 
+					login_current: date, 
+					login_previous: user.login_current
+				}));
 		}).then((user) => {
 			// construct output and inject header
 			return { authorization: this.generateJWT(user), user: user };
@@ -115,11 +119,11 @@ class Auth extends Service {
 	generateJWT(user) {
 		return JWT.sign({
 			iss: 'http://127.0.0.1:3000',
-			aud: 'http://generic.docker.localhost',
+			aud: this.$client.origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + 60000000,
-			guid: user.guid
+			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
+			uuid: user.uuid
 		}, process.env.JWTKey, { algorithm: 'HS256' });
 	}
 

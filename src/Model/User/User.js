@@ -45,7 +45,14 @@ class User extends Model {
      */
 	getFromCredentials(username, password) {
 		return this.db
-			.select('user.user.*', 'user.user_account.*')
+			.select(
+				'user.user.id',
+				'user.user.uuid',
+				'user.user_account.email',
+				'user.user_account.password',
+				'user.user_account.login_current',
+				'user.user_account.login_previous'
+			)
 			.from('user.user')
 			.join('user.user_account', 'user.user.id', 'user.user_account.user_id')
 			.where('user.user_account.email', 'p@ulsmith.net')

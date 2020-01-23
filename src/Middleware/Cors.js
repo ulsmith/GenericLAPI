@@ -29,10 +29,10 @@ class Cors extends Middleware {
      */
 	out(response, context) {
 		// no cors request
-		if (!this.client.origin || !this.environment.CorsWhitelist) return;
+		if (!this.$client.origin || !this.$environment.CorsWhitelist) return;
 
 		// work out origin, is it in whitelist
-		let origin = this.environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.client.origin) >= 0 ? this.client.origin : '';
+		let origin = this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) >= 0 ? this.$client.origin : '';
 
 		// update headers on way back out
 		response.headers['Access-Control-Allow-Origin'] = origin; // needs to be checked againstwhitelist

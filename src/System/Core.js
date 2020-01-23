@@ -15,28 +15,28 @@ class Core {
 	 * @desciption Get the environment data available to the system
 	 * @return {Object} Middleware available
 	 */
-	get environment() { return process.env }
+	get $environment() { return process.env }
 
 	/**
 	 * @public @get client
 	 * @desciption Get the client data available to the system
 	 * @return {Object} Middleware available
 	 */
-	get client() { return process.__client }
+	get $client() { return process.__client }
 
 	/**
 	 * @public @get services
 	 * @desciption Get the services available to the system
 	 * @return {Object} Services available
 	 */
-	get services() { return process.__services }
+	get $services() { return process.__services }
 
 	/**
 	 * @public @get middleware
 	 * @desciption Get the middleware available to the system
 	 * @return {Object} Middleware available
 	 */
-	get middleware() { return process.__middleware }
+	get $middleware() { return process.__middleware }
 }
 
 module.exports = Core;

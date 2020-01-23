@@ -34,10 +34,10 @@ class Auth extends Middleware {
      */
 	in(event, context) {
 		// incoming only
-		if (!this.client.origin) throw new RestError('Origin is not set, access denied', 401);
+		if (!this.$client.origin) throw new RestError('Origin is not set, access denied', 401);
 
 		// origin failed to auth to white list
-		if (process.env.CorsWhitelist.replace(' ', '').split(',').indexOf(this.client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
+		if (this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
 
 		// Athorization Header? public only access...
 		if (!event.headers.Authorization) return;
@@ -58,12 +58,12 @@ class Auth extends Middleware {
 			// generate auth
 			event['auth'] = {
 				iss: 'api',
-				aud: this.client.origin,
+				aud: this.$client.origin,
 				iat: Date.now() / 1000,
 				nbf: Date.now() / 1000,
 				exp: (Date.now() / 1000) + 432000,
-				permissionDefinitionRead: process.env.PermissionDefinitionRead,
-				permissionUploadWrite: process.env.PermissionUploadWrite
+				permissionDefinitionRead: this.$environment.PermissionDefinitionRead,
+				permissionUploadWrite: this.$environment.PermissionUploadWrite
 			}
 
 			event.headers.Authorization = 'Bearer anonymous';
@@ -71,10 +71,10 @@ class Auth extends Middleware {
 			// next try JWT auth
 			try {
 				// validate token
-				event['auth'] = jwt.verify(tokenParts[1], process.env.JWTKey);
+				event['auth'] = jwt.verify(tokenParts[1], this.$environment.JWTKey);
 
 				// the JWT must have been issued for the origin (aud > incoming from API/other), or from the origin (iss > incoming from service)
-				if (event.auth.iss !== this.client.origin && event.auth.aud !== this.client.origin) throw new RestError('Origin has been changed, access denied', 401);
+				if (event.auth.iss !== this.$client.origin && event.auth.aud !== this.$client.origin) throw new RestError('Origin has been changed, access denied', 401);
 
 				// if first handshake or ten minutes since last one, recycle token
 				if (event.auth.iss !== 'api' || event.auth.iat + 600 < Date.now() / 1000) {
@@ -82,7 +82,7 @@ class Auth extends Middleware {
 					event.auth.iat = Date.now() / 1000;
 					event.auth.nbf = Date.now() / 1000;
 					event.auth.exp = (Date.now() / 1000) + 432000;
-					event.headers.Authorization = 'Bearer ' + jwt.sign(event.auth, process.env.JWTKey);
+					event.headers.Authorization = 'Bearer ' + jwt.sign(event.auth, this.$environment.JWTKey);
 				}
 				
 				// we always need a path to the def and indetifying params for auth mode with jwt

@@ -28,7 +28,7 @@ class Model extends Core {
 	 * @desciption Get the services available to the system
 	 * @return {Knex} Knex service abstracted to db
 	 */
-	get db() { return this.services.knex }
+	get db() { return this.$services.knex }
 
 	/**
 	 * @private @get model
