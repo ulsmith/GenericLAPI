@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: generic-lapi
+
+Globals:
+  Function:
+    Timeout: 3
+    Runtime: nodejs10.x
+    Handler: application.handler
+    Environment:
+      Variables:
+        Version: 0.0.1
+        Mode: development
+        CorsWhitelist: 'http://your-ui-dns-address.com' 
+        JWTKey: ...zCDAieQVC...
+        KnexEngine: 'postgres'
+        KnexHost: 'host-address-for-db'
+        KnexPort: 5432
+        KnexDatabase: 'generic'
+        KnexUsername: 'generic'
+        KnexPassword: '...dsfdghfgdgh...'
+
+Resources:
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: 'SecurityGroup for Lambda Serverless Functions'
+      VpcId: 'vpc-xxxxx'
+
+  Account:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 10
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+        SubnetIds:
+          - subnet-xxxx1
+          - subnet-xxxx2
+          - subnet-xxxx3
+      Events:
+        Options:
+          Type: Api
+          Properties:
+            Path: /account
+            Method: options
+        AuthenticatePost:
+          Type: Api
+          Properties:
+            Path: /account/authenticate
+            Method: post
+            
+        AuthenticateGet:
+          Type: Api
+          Properties:
+            Path: /account/authenticate
+            Method: get
+
+  Health:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 10
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+        SubnetIds:
+          - subnet-xxxx1
+          - subnet-xxxx2
+          - subnet-xxxx3
+      Events:
+        Options:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: options
+        AuthenticateGet:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+
+  CatchAll:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 10
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+        SubnetIds:
+          - subnet-xxxx1
+          - subnet-xxxx2
+          - subnet-xxxx3
+      ReservedConcurrentExecutions: 10
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /{error+}
+            Method: any

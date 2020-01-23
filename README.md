@@ -1,8 +1,28 @@
 # Introduction
 
-A API for GENERIC, a lambda stack using cloud formation to deply AWS services.
+A FaaS Generic API for applications, using the AWS ecosystem. Written in javascript for node.
 
-All data on the API is stored in s3 buckets with encrytion that can be turned on or off.
+Create a Lambda/API Gateway/RDS/S3/??? stack using Cloud Formation to deply (SAM local) AWS services. Run the system locally, using docker (automatically) through the AWS sam cli tool and docker (required). Once deployed, the stack will split API Gateway endpoints into seperate lambda's.
+
+Why use a stack? Its MVCS so your code makes sense. Its what your used to, but when deployed seperate lambda's are used and the full stack goes on each lambda.
+
+Is this not a waste of reasources, making it slow? Not at all, controllers are loaded on the fly through dynamic require, loading only the dependencies in that specific chain. To put this another way, think of it like lazy loading the required files only. So this makes it pretty much the same speed as basic lambda's.
+
+Get the familularity of MVCS, with the speed and flexibility of FaaS. There are also lots of other benefits, like a ready to go DB handler using Knex.js, promised based controllers, with a single application handler to bridge the system to the lambda callback.
+
+Whats included?
+
+Routing (SAM template.yaml)
+Controllers
+Middleware
+Models
+Services
+
+All system files are available to create and extend the stack, with a library for your own helper classes.
+
+Run locally with a simple `npm start`...
+Build your AWS CF package with a simple `npm run build`...
+Deploy your AWS CF package with a simple `npm run deploy`...
 
 # Setup
 
@@ -12,9 +32,15 @@ Visit https://docs.aws.amazon.com/serverless-application-model/index.html to get
 
 # Running
 
+The very first time you try to access the API locally, you will have a big delay, as docker pulls down the correct image to kick start the container used for simulating Lambda's.
+
+All other requests will use this newly pulled image and should respond typically with a 2s ish latency.
+
 To run the local api for lambda, run the following to make the lambda functions expose themselves...
 
-`sam local start-api --profile your-user-account`
+First configure your package.json script for start. Once done run...
+
+`npm start`
 
 This will create a local serving of the application stack that can talk to AWS resources. The stack will normally be served @ http://127.0.0.1:3000
 
@@ -32,140 +58,12 @@ You can import from node directly using
 
 `const Request = require('request-promise-native');` to import from a third party npm installed library, in this case 'request', a simple node request handler to send http requests. 
 
-# Using
+# Deploy
 
-The system is split into three endpoints (all running on own lambds)
+You first need to build your AWS CF package, to do so, configure your CLI command in the package.json file. Once complete, you may run...
 
-__definition:__ What drives the canvas, what modules to show on it and how to show them.
-__payload:__ Any resulting data captured from the canvas, encrypted if required and stored on S3.
-__upload:__ Any resulting uploaded files to accompany the payload.
+`npm run build`
 
-Varying different endpoints are available on the endpoints such as GET, PUT... and so on.
+Finally push your build to production, once you have configured your CLI command in package.json
 
-## Authentication
-
-First we only allow certain origins by way of a whitelist on the API.
-
-In order to access any functionality on the system, you must supply and role permisson keys for the access you wish. These are held in teh template file and should be baked into the JWT.
-
-### Fully Authenticated
-
-Authentication comes in the way of a JWT that needs to be signed with the same key on the API. The aud or iss in the JWT must also match the origin header.
-
-In this mode the two bits of info are placed in the JWT.
-
-### Anonymous
-
-Authentication happens by means of verifying an origin is safe to write a payload, if so, then handshaking ties the session with a self generated JWT to ensure data only comes from that instance of canvas.
-
-This mode is onyl usable by the canvas system and not by direct access to the API
-
-## Endpoints
-
-There are three endpoints on the API.
-
-### Definition
-
-http://example/definition/standard-form
-
-__GET:__ GET a definition by key "standard-form"
-__PUT:__ PUT a new definition with key "standard-form"
-__PATCH:__ PATCH an existing definition that has key "standard-form"
-__DELETE:__ DELETE an existing definition that has key "standard-form"
-__POST:__ POST multi-function request on definition using post data, such as list, dump etc...
-
-### Payload
-
-http://example/payload/standard-form
-
-__GET:__ GET a payload by key "standard-form"
-__PUT:__ PUT a new payload with key "standard-form"
-__PATCH:__ PATCH an existing payload that has key "standard-form"
-__DELETE:__ DELETE an existing payload that has key "standard-form"
-__POST:__ POST multi-function request on payload using post data, such as list, dump etc...
-
-### Upload
-
-http://example/upload/standard-form
-
-__GET:__ GET an upload by key "standard-form"
-__PUT:__ PUT a new upload with key "standard-form"
-__PATCH:__ PATCH an existing upload that has key "standard-form"
-__DELETE:__ DELETE an existing upload that has key "standard-form"
-__POST:__ POST multi-function request on upload using post data, such as list, dump etc...
-
-## JWT
-
-The JWT is hte heart of the authentication and requires certain data.
-
-```json
-{
-	"iss": "http://example.net",
-	"aud": "http://the-api-server-address.com",
-	"iat": 123456789,
-	"nbf": 123456789,
-	"exp": 123456789,
-	"identifier": "695B9B31-9CD9-478B-AA41-AE22152B1D83",
-	"permissionDefinitionRead": "hfdhfsdkjnef43432kjljoifd34392jfbv.fdsfd",
-	"permissionPayloadRead": "hfdhfsdkjnef43432kjljoifd34392jfbv.fdsfd"
-}
-```
-
-iss -> the fully qualified domain of the origin (your server)
-aud -> the fully qualified domain of target (the api)
-iat -> issued at should be current tiemstamp in seconds
-nbf -> not before should be current tiemstamp in seconds
-exp -> expiry should be current tiemstamp in seconds + an amount that you wish the token to stay alive such as 5 days in seconds
-identifier -> Unique reference for the session your on, such as GUID
-permissionDefinitionRead -> The permission key to get access to this
-permissionDefinitionWrite -> The permission key to get access to this
-permissionDefinitionDelete -> The permission key to get access to this
-permissionDefinitionList -> The permission key to get access to this
-permissionPayloadRead -> The permission key to get access to this
-permissionPayloadWrite -> The permission key to get access to this
-permissionPayloadDelete -> The permission key to get access to this
-permissionPayloadList -> The permission key to get access to this
-permissionUploadRead -> The permission key to get access to this
-permissionUploadWrite -> The permission key to get access to this
-permissionUploadDelete -> The permission key to get access to this
-permissionUploadList -> The permission key to get access to this
-
-## Example
-
-An example of hitting the endpoint with PHP, this can be done in any languague or system that can make REST style requests...
-
-The JWT_KEY has to match the key on the API server
-
-```php
-	// GET A PAYLOAD
-	$jwt_data = [
-		'iss' => 'http://' . $_SERVER['HTTP_HOST'],
-		'aud' => 'http://the-api-server-address.com',
-		'iat' => time(),
-		'nbf' => time(),
-		'exp' => time() + 6000, // expire in 60 seconds (one shot jwt)
-		'identifier' => '695B9B31-9CD9-478B-AA41-AE22152B1D83',
-		'reference' => 'advert-id-123456',
-		'permissionPayloadRead' => 'hfdhfsdkjnef43432kjljoifd34392jfbv.fdsfd'
-	];
-
-	// JWT creation
-	$jwt = JWT::encode($jwt_data, JWT_KEY);
-	$origin = "http://{$_SERVER['HTTP_HOST']}";
-
-	// Create a stream
-	$opts = [
-		'http' => [
-			'method' => "GET",
-			'header' => "Authorization: Bearer {$jwt}\r\n" .
-						"Accept: application/json\r\n" .
-						"Cache-Control: no-cache\r\n" .
-						"Origin: {$origin}\r\n"
-		]
-	];
-
-	// Open the file using the HTTP headers set above
-	$context = stream_context_create($opts);
-	$data = file_get_contents("http://the-api-server-address.com/payload/standard-form", false, $context);
-
-```
+`npm run deploy`

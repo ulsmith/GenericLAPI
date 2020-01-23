@@ -68,8 +68,9 @@ exports.handler = (event, context, callback) => {
 	};
 
 	process.__middleware = {
+		auth: new CorsMiddleware(),
 		knex: new KnexMiddleware(),
-		auth: new AuthMiddleware()
+		auth: new AuthMiddleware(),
 	};
 
     // lets parse over any body
