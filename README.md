@@ -24,11 +24,19 @@ Run locally with a simple `npm start`...
 Build your AWS CF package with a simple `npm run build`...
 Deploy your AWS CF package with a simple `npm run deploy`...
 
+This system is initially set up to use postgres through Knex.js using the {pg} dependency for postgres. Alternatively you can reconfigure this setup to use {pg} Amazon Redshift, {mysql} MySQL or MariaDB, {sqlite3} SQLite3, or {mssql} MSSQL. Loading hte correct node package for them. thi sallows us to shift DB without having to change any model code.
+
+Models in the system work differently to that of an ORM. ORM's have one main puprose for existing, abstaction of the DB to allow for easy change, without the need to rewrite code. We do away with the bloat of ORM, applying abstraction in the models, through custom functions that extend the model bas functions, with the DB abstraction happening direct at knex.js.
+
 # Setup
 
 This system uses SAM to create, run locallly and deploy to AWS. All commands are done with the default AWS user authenticated on your system, unless you set up more than one user in your credentials file and use --profile to select it.
 
 Visit https://docs.aws.amazon.com/serverless-application-model/index.html to get SAM up and running.
+
+Once complete, install all required deps using npm
+
+`npm install`
 
 # Running
 
