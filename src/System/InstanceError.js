@@ -24,6 +24,7 @@ class InstanceError extends Error {
 		// Maintains proper stack trace for where our error was thrown (only available on V8)
 		if (Error.captureStackTrace) Error.captureStackTrace(this, InstanceError);
 
+		this.exception = true;
 		this.name = 'InstanceError';
 		this.type = !!instance && instance.constructor && instance.constructor.name ? instance.constructor.name : 'unknown';
 		this.message = message;
