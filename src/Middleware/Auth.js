@@ -39,14 +39,14 @@ class Auth extends Middleware {
 		// origin failed to auth to white list
 		if (this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
 
-		// Athorization Header? public only access...
-		if (!event.headers.Authorization) return;
+		// public access, do not authorize
+		if (event.controller.access.public.indexOf(event.httpMethod.toLowerCase()) >= 0) return;
+		
+		// missing token
+		if (!event.headers.Authorization) throw new RestError('Missing Authorization Token, invalid', 401);
 
 		// get token bits
 		if (event.headers.Authorization.split(' ')[0].toLowerCase() !== 'bearer') throw new RestError('Malformed Token due to missing "Bearer", invalid', 401);
-
-		// dont even try to auth if path missing// need to only auth if we are authing the route, bypass non auth routes
-		console.log('make sure we verify if route is authable or public, bypass public, pull this from params on the routes somehow in the template file');
 
 		// verify against auth service, throws restError on failure
 		return this.$services.auth.verify(event.headers.Authorization);

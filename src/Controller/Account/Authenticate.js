@@ -22,6 +22,13 @@ class Authenticate extends Controller {
         super();
     }
 
+	/**
+	 * @public @static @get access
+	 * @desciption Get the access for methods. All methods are restricted by default unless added to { public: [] }. Public methods skip auth middleware
+	 * @return {Object} Object of access levels for methods
+	 */
+    static get access() { return { public: ['post'] } }
+
     /**
      * @public @method post
      * @description Log in to the back end with a post request
@@ -31,7 +38,7 @@ class Authenticate extends Controller {
      */
 	post(event) {
 		if (!event.parsedBody.username || !event.parsedBody.password) throw new RestError('We could not log you in, please try again.', 401);
-console.log(9);
+
         return this.$services.auth.login(event.parsedBody.username, event.parsedBody.password, event.requestContext.identity.sourceIp);
 	}
 
@@ -45,7 +52,6 @@ console.log(9);
 	get(event) {
 		if (!event.headers.Authorization) throw new RestError('We could not verify you, logging you out.', 401);
 
-        console.log(99);
         return {user: this.$services.auth.user};
 	}
 }

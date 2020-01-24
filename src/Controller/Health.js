@@ -21,6 +21,13 @@ class Health extends Controller {
         super();
     }
 
+	/**
+	 * @public @static @get access
+	 * @desciption Get the access for methods. All methods are restricted by default unless added to { public: [] }. Public methods skip auth middleware
+	 * @return {Object} Object of access levels for methods
+	 */
+    static get access() { return { public: ['get'] } }
+
     /**
      * @public @method get
      * @description Ping the backend to check authentication
@@ -29,9 +36,6 @@ class Health extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	get(event, context) {
-
-console.log(event);
-
 		return Promise.resolve({'status': 'healthy', 'dateTime': new Date()});
 	}
 }

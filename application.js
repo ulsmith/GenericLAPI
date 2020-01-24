@@ -42,7 +42,8 @@ exports.handler = (event, context, callback) => {
     // load controller
     let controller = {};
     try {
-        controller[name] = require('./src/Controller/' + path);
+		controller[name] = require('./src/Controller/' + path);
+		event.controller = { path: './src/Controller/' + path, name: name, access: controller[name].access};
     } catch (error) {
         if (process.env.Mode === 'development') console.log(error);
         return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.resource + ']') });
