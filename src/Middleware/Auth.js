@@ -40,7 +40,7 @@ class Auth extends Middleware {
 		if (this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
 
 		// public access, do not authorize
-		if (event.controller.access.public.indexOf(event.httpMethod.toLowerCase()) >= 0) return;
+		if (event.controller.access === 'public') return;
 		
 		// missing token
 		if (!event.headers.Authorization) throw new RestError('Missing Authorization Token, invalid', 401);

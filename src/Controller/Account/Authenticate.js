@@ -23,11 +23,11 @@ class Authenticate extends Controller {
     }
 
 	/**
-	 * @public @static @get access
-	 * @desciption Get the access for methods. All methods are restricted by default unless added to { public: [] }. Public methods skip auth middleware
+	 * @public @static @get post
+	 * @desciption Get the access level for the post method. All methods are restricted by default.
 	 * @return {Object} Object of access levels for methods
 	 */
-    static get access() { return { public: ['post'] } }
+    static get post() { return 'public' }
 
     /**
      * @public @method post

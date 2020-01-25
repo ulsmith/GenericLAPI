@@ -26,7 +26,7 @@ class Health extends Controller {
 	 * @desciption Get the access for methods. All methods are restricted by default unless added to { public: [] }. Public methods skip auth middleware
 	 * @return {Object} Object of access levels for methods
 	 */
-    static get access() { return { public: ['get'] } }
+    static get get() { return 'public' }
 
     /**
      * @public @method get
