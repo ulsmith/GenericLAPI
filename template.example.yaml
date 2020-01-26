@@ -3,6 +3,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: generic-lapi
 
 Globals:
+  Api:
+    Cors:
+      AllowMethods: "'GET, POST, PUT, DELETE, OPTIONS, PATCH'"
+      AllowHeaders: "'Accept, Cache-Control, Content-Type, Content-Length, Authorization, Pragma, Expires'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
   Function:
     Timeout: 3
     Runtime: nodejs10.x
@@ -12,7 +18,11 @@ Globals:
         Version: 0.0.1
         Mode: development
         CorsWhitelist: 'http://your-ui-dns-address.com' 
+
+        JWTIssuer: 'http://0.0.0.0'
         JWTKey: ...zCDAieQVC...
+        JWTExpireSeconds: 3000
+
         KnexEngine: 'postgres'
         KnexHost: 'host-address-for-db'
         KnexPort: 5432
@@ -40,22 +50,21 @@ Resources:
           - subnet-xxxx2
           - subnet-xxxx3
       Events:
-        Options:
-          Type: Api
-          Properties:
-            Path: /account
-            Method: options
         AuthenticatePost:
           Type: Api
           Properties:
             Path: /account/authenticate
             Method: post
-            
         AuthenticateGet:
           Type: Api
           Properties:
             Path: /account/authenticate
             Method: get
+        RefreshPost:
+          Type: Api
+          Properties:
+            Path: /account/refresh
+            Method: post
 
   Health:
     Type: AWS::Serverless::Function
@@ -70,11 +79,6 @@ Resources:
           - subnet-xxxx2
           - subnet-xxxx3
       Events:
-        Options:
-          Type: Api
-          Properties:
-            Path: /health
-            Method: options
         AuthenticateGet:
           Type: Api
           Properties:
