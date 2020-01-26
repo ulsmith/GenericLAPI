@@ -118,6 +118,31 @@ class Auth extends Service {
 	}
 
     /**
+     * @public @method refresh
+	 * @description Verify a token is valid or expired, then refresh?
+     * @param {String} authorization The auth string from the request header, to verify
+     * @return {Object} The user object to return if verified
+     */
+	refresh(authorization) {
+		let jwt = authorization.replace('Bearer', '').trim();
+
+		try {
+			// if verified, just refresh anyway
+			if (this.verifyJWT(jwt)) return this.refreshJWT(jwt);
+		} catch (error) {
+			// if expired, refresh
+			if (error.name === 'TokenExpiredError') return this.refreshJWT(jwt);
+
+			throw new RestError({
+				message: 'Authorization failed, please log in to authorize.',
+				method: 'POST',
+				url: this.$environment.JWTIssuer + '/account/authenticate',
+				body: { username: '', password: '' }
+			}, 401);
+		}
+	}
+
+    /**
      * @public @method generateJWT
 	 * @description Creates a JWT from a user object
      * @param {Object} user The user object to use for the JWT
@@ -143,6 +168,22 @@ class Auth extends Service {
 	verifyJWT(token) {
 		return JWT.verify(token, process.env.JWTKey, { algorithm: 'HS256' });
 	}
+
+    /**
+     * @public @method refreshJWT
+	 * @description Verify JWT is valid
+     * @param {String} token The token to verify
+     * @return {Boolean} Is JWT verified or not?
+     */
+	refreshJWT(token) {
+		let decoded = JWT.decode(token, { complete: true });
+		decoded.payload.exp = Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds);
+		return JWT.sign(decoded.payload, process.env.JWTKey, { algorithm: 'HS256' });
+	}
+
+
+
+
 }
 
 module.exports = Auth;
