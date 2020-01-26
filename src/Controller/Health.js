@@ -1,6 +1,7 @@
 'use strict';
 
 const Controller = require('../System/Controller.js');
+const HealthModel = require('../Model/Public/Health.js');
 
 /**
  * @namespace API/Controller/Account
@@ -30,13 +31,25 @@ class Health extends Controller {
 
     /**
      * @public @method get
-     * @description Ping the backend to check authentication
+     * @description Ping the system to check whats health and whats not
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	get(event, context) {
-		return Promise.resolve({'status': 'healthy', 'dateTime': new Date()});
+		let health = new HealthModel();
+		return health.getHealth()
+			.then((data) => {
+				return { database: data.status || 'error' };
+			})
+			.catch((data) => { 
+				return { database: 'error' };
+			})
+			.then((data) => {
+				data.system = 'healthy';
+				data.dateTime = new Date();
+				return data;
+			});
 	}
 }
 
