@@ -1,5 +1,5 @@
 -- Created by Vertabelo (http://vertabelo.com)
--- Last modification date: 2020-01-29 10:59:40.561
+-- Last modification date: 2020-01-29 21:10:09.319
 
 -- on update function
 CREATE OR REPLACE FUNCTION updated_current_timestamp() 
@@ -28,12 +28,13 @@ CREATE TABLE identity.department (
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name text  NOT NULL,
+    name_unique text  NOT NULL,
     description text  NOT NULL,
-    CONSTRAINT department_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT department_ak_1 UNIQUE (name_unique) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__department__primary_key PRIMARY KEY (id,organisation_id)
 );
 
-CREATE INDEX department_idx_1 on identity.department (organisation_id ASC,name ASC);
+CREATE INDEX department_idx_1 on identity.department (organisation_id ASC,name_unique ASC);
 
 CREATE TRIGGER updated__department BEFORE UPDATE ON "identity"."department" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -45,11 +46,10 @@ CREATE TABLE identity.department_group (
     department_organisation_id serial  NOT NULL,
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT department_group_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__department_group__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX department_group_idx_1 on identity.department_group (group_id ASC,department_id ASC,department_organisation_id ASC);
+CREATE INDEX department_group_idx_1 on identity.department_group (group_id ASC,department_id ASC);
 
 CREATE TRIGGER updated__department_group BEFORE UPDATE ON "identity"."department_group" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -64,11 +64,10 @@ CREATE TABLE identity.department_role (
     read boolean  NOT NULL DEFAULT false,
     write boolean  NOT NULL DEFAULT false,
     delete boolean  NOT NULL DEFAULT false,
-    CONSTRAINT department_role_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__department_role__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX department_role_idx_1 on identity.department_role (department_id ASC,department_organisation_id ASC,role_id ASC);
+CREATE INDEX department_role_idx_1 on identity.department_role (department_id ASC,role_id ASC);
 
 CREATE TRIGGER updated__department_role BEFORE UPDATE ON "identity"."department_role" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -78,13 +77,13 @@ CREATE TABLE identity."group" (
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name text  NOT NULL,
+    name_unique text  NOT NULL,
     description text  NOT NULL,
-    CONSTRAINT group_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT group_ak_2 UNIQUE (name) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT group_ak_1 UNIQUE (name_unique) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__group__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX group_idx_1 on identity."group" (name ASC);
+CREATE INDEX group_idx_1 on identity."group" (name_unique ASC);
 
 CREATE TRIGGER updated__group BEFORE UPDATE ON "identity"."group" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -98,7 +97,6 @@ CREATE TABLE identity.group_role (
     read boolean  NOT NULL DEFAULT false,
     write boolean  NOT NULL DEFAULT false,
     delete boolean  NOT NULL DEFAULT false,
-    CONSTRAINT group_role_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__group_role__primary_key PRIMARY KEY (id)
 );
 
@@ -116,13 +114,14 @@ CREATE TABLE identity.organisation (
     name text  NOT NULL,
     name_unique text  NOT NULL,
     description text  NOT NULL,
-    CONSTRAINT organisation_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT organisation_ak_2 UNIQUE (uuid) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT organisation_ak_3 UNIQUE (name_unique) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT organisation_ak_1 UNIQUE (uuid) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT organisation_ak_2 UNIQUE (name_unique) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__organisation__primary_key PRIMARY KEY (id)
 );
 
 CREATE INDEX organisation_idx_1 on identity.organisation (uuid ASC);
+
+CREATE INDEX organisation_idx_2 on identity.organisation (name_unique ASC);
 
 CREATE TRIGGER updated__organisation BEFORE UPDATE ON "identity"."organisation" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -132,13 +131,13 @@ CREATE TABLE identity.role (
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name text  NOT NULL,
+    name_unique text  NOT NULL,
     description text  NOT NULL,
-    CONSTRAINT role_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT role_ak_2 UNIQUE (name) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT role_ak_1 UNIQUE (name_unique) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__role__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX role_idx_1 on identity.role (name ASC);
+CREATE INDEX role_idx_1 on identity.role (name_unique ASC);
 
 CREATE TRIGGER updated__role BEFORE UPDATE ON "identity"."role" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -150,8 +149,7 @@ CREATE TABLE identity."user" (
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     active boolean  NOT NULL DEFAULT false,
     name text  NOT NULL,
-    CONSTRAINT user_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT user_ak_2 UNIQUE (uuid) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT user_ak_1 UNIQUE (uuid) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user__primary_key PRIMARY KEY (id)
 );
 
@@ -172,8 +170,6 @@ CREATE TABLE identity.user_account (
     user_agent text  NULL,
     login_current timestamp  NULL,
     login_previous timestamp  NULL,
-    CONSTRAINT user_account_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT user_account_ak_2 UNIQUE (user_id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user_account__primary_key PRIMARY KEY (id,user_id)
 );
 
@@ -189,11 +185,10 @@ CREATE TABLE identity.user_department (
     department_organisation_id serial  NOT NULL,
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT user_department_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user_department__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX user_department_idx_1 on identity.user_department (user_id ASC,department_id ASC,department_organisation_id ASC);
+CREATE INDEX user_department_idx_1 on identity.user_department (user_id ASC,department_organisation_id ASC);
 
 CREATE TRIGGER updated__user_department BEFORE UPDATE ON "identity"."user_department" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -204,7 +199,6 @@ CREATE TABLE identity.user_group (
     group_id serial  NOT NULL,
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT user_group_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user_group__primary_key PRIMARY KEY (id)
 );
 
@@ -221,12 +215,13 @@ CREATE TABLE identity.user_identity (
     identity text  NOT NULL,
     type user_identity_type  NOT NULL DEFAULT 'email',
     "primary" boolean  NOT NULL DEFAULT false,
-    CONSTRAINT user_identity_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT user_identity_ak_2 UNIQUE (identity, type) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT user_identity_ak_1 UNIQUE (identity, type) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user_identity__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX user_identity_idx_1 on identity.user_identity (user_id ASC,identity ASC);
+CREATE INDEX user_identity_idx_1 on identity.user_identity (user_id ASC);
+
+CREATE INDEX user_identity_idx_2 on identity.user_identity (user_id ASC,identity ASC,type ASC);
 
 CREATE TRIGGER updated__user_identity BEFORE UPDATE ON "identity"."user_identity" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
@@ -240,7 +235,6 @@ CREATE TABLE identity.user_role (
     read boolean  NOT NULL DEFAULT false,
     write boolean  NOT NULL DEFAULT false,
     delete boolean  NOT NULL DEFAULT false,
-    CONSTRAINT user_role_ak_1 UNIQUE (id) NOT DEFERRABLE  INITIALLY IMMEDIATE,
     CONSTRAINT identity__user_role__primary_key PRIMARY KEY (id)
 );
 
@@ -403,11 +397,11 @@ ALTER TABLE identity.user_role ADD CONSTRAINT user_role_user
 
 -- add org
 INSERT INTO "identity"."organisation" ("name", "name_unique", "description")
-VALUES ('Answers in Retirement', 'answers_in_retirement', 'Base organisation for your staff.');
+VALUES ('Generic Company Ltd', 'generic_company_ltd', 'Base organisation for Generic Company Limited staff.');
 
 -- then department
-INSERT INTO "identity"."department" ("organisation_id", "name", "description")
-VALUES (1, 'Administration (Super)', 'Base department for your staff.');
+INSERT INTO "identity"."department" ("organisation_id", "name", "name_unique", "description")
+VALUES (1, 'Administration (Super)', 'administration.super', 'Base department for Generic Company Limited staff.');
 
 -- then user
 INSERT INTO "identity"."user" ("name")
@@ -415,7 +409,7 @@ VALUES ('Paul Smith');
 
 -- user identity
 INSERT INTO "identity"."user_identity" ("identity", "type", "primary")
-VALUES ('p...@...t', 'email', true);
+VALUES ('p@ulsmith.net', 'email', true);
 
 -- user account
 INSERT INTO "identity"."user_account" (user_id, password)
@@ -423,24 +417,33 @@ VALUES (1, 'a395192e5666da4839ebcaa8ef903083848d7a7d50a29d65b5ee48a5e0bbfa9e635b
 
 -- permissions
 
--- role for login access/auth
-INSERT INTO "identity"."role" ("name", "description")
-VALUES ('api.access.authenticate', 'API authentication route, allowing user to login and also ping the backend.');
-
 -- add a super admin group
-INSERT INTO "identity"."group" ("name", "description")
-VALUES ('Administrator Super', 'Full read, write, delete access to entire system, regardless of organisation, department or any other. A.K.A. GOD.');
+INSERT INTO "identity"."group" ("name", "name_unique", "description")
+VALUES ('Administrator (Super)', 'administrator.super', 'Full read, write, delete access to entire system, regardless of organisation, department or any other. A.K.A. GOD!');
+
+-- role for login access/auth
+INSERT INTO "identity"."role" ("name", "name_unique", "description")
+VALUES 
+('API access to endpoint xyz', 'api.controller.xyz', 'API access to a specific endpoint.'),
+('API access to endpoint 123', 'api.controller.123', 'API access to a specific endpoint.'),
+('UI access to page ABC', 'ui.route.abc', 'UI access to a specific page.'),
+('UI access to page 123', 'ui.route.123', 'UI access to a specific page.');
 
 -- apply permissions to the group
 INSERT INTO "identity"."group_role" ("group_id", "role_id", "read", "write", "delete")
-VALUES (1, 1, true, true, true);
+VALUES 
+(1, 1, true, true, true),
+(1, 2, true, true, true),
+(1, 3, true, true, true),
+(1, 4, true, true, true);
 
 -- assign group to the department
 INSERT INTO "identity"."department_group" ("group_id", "department_id", "department_organisation_id")
 VALUES (1, 1, 1);
 
--- add me to the department. ANyone added to the Super Administrator department for AiR will gain full rights
+-- add me to the department.
 INSERT INTO "identity"."user_department" ("user_id", "department_id", "department_organisation_id")
 VALUES (1, 1, 1);;
 
 -- End of file.
+
