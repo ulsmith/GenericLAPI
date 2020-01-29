@@ -117,23 +117,6 @@ class Auth extends Service {
 					login_current: user.login_current,
 					login_previous: user.login_previodus
 				}};
-			}).then((stuff) => {
-
-
-				return userModel.getAllPermisions(this.user.id, 1);
-
-
-			}).then((perms) => {
-				console.log(perms);
-
-				return {
-					user: {
-						uuid: this.user.uuid,
-						name: this.user.name,
-						login_current: this.user.login_current,
-						login_previous: this.user.login_previodus
-					}
-				};
 			});
 	}
 

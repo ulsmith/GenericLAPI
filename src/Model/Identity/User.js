@@ -178,7 +178,24 @@ class User extends Model {
 	 * ORDER BY "identity".role.name;
      */
 	getPermisions(match, user_id, organisation_id) {
-
+		return this.db
+			.select(
+				'role.name AS role',
+				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
+				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
+				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
+			)
+			.from('identity.role')
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', user_id).andOn('user_department.department_organisation_id', '=', organisation_id) })
+			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
+			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
+			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
+			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
+			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
+			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
+			.where('role.name', 'LIKE', match + '%')
+			.groupBy('role.name')
+			.orderBy('role.name', 'ASC');
 	}
 
     /**
@@ -213,7 +230,25 @@ class User extends Model {
 	 * LIMIT 1;
      */
 	getPermision(match, user_id, organisation_id) {
-
+		return this.db
+			.select(
+				'role.name AS role',
+				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
+				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
+				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
+			)
+			.from('identity.role')
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', user_id).andOn('user_department.department_organisation_id', '=', organisation_id) })
+			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
+			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
+			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
+			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
+			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
+			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
+			.where('role.name', match)
+			.groupBy('role.name')
+			.orderBy('role.name', 'ASC')
+			.limit(1);
 	}
 }
 
