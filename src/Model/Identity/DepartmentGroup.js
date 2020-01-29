@@ -3,23 +3,23 @@
 const Model = require('../../System/Model.js');
 
 /**
- * @namespace API/Model/User
- * @class UserAccount
+ * @namespace API/Model/Identity
+ * @class DepartmentGroup
  * @extends Model
- * @description Model class for user.user_account table
+ * @description Model class for identity.department_group table
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class UserAccount extends Model {
+class DepartmentGroup extends Model {
 
 	/**
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor () {
-		super('user.user_account');
-	}
+    constructor() {
+        super('identity.department_group');
+    }
 }
 
-module.exports = UserAccount;
+module.exports = DepartmentGroup;

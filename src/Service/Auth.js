@@ -3,8 +3,8 @@
 const Service = require('../System/Service.js');
 const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
-const UserModel = require('../Model/User/User.js');
-const UserAccountModel = require('../Model/User/UserAccount.js');
+const UserModel = require('../Model/Identity/User.js');
+const UserAccountModel = require('../Model/Identity/UserAccount.js');
 const JWT = require('jsonwebtoken');
 
 /**
@@ -36,7 +36,7 @@ class Auth extends Service {
      * @param {String} ip The resource to fetch with the given key
      * @return Promise a resulting promise with an error to feed back or data to send on
      */
-	login(username, password, ip) {
+	login(username, password, userAgent) {
 		let userModel = new UserModel();
 		let userAccountModel = new UserAccountModel();
 
@@ -45,6 +45,7 @@ class Auth extends Service {
 				// NOTE: need to flood prevent here too
 				if (!user) throw new RestError('Login details incorrect, please try again.', 401);
 				if (user.password !== Crypto.passwordHash(password, user.password.substring(0, user.password.length / 2))) throw new RestError('Login details incorrect, please try again.', 401);
+				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
 				
 				return user;
 			}).then((user) => {
@@ -52,16 +53,16 @@ class Auth extends Service {
 
 				// update user but return data from before update so last logged on correct
 				return userAccountModel
-					.update(user.id, { login_current: date , login_previous: user.login_current })
+					.update(user.id, { login_current: date, login_previous: user.login_current, user_agent: userAgent })
 					.then((update) => ({
 						uuid: user.uuid, 
-						email: user.email, 
+						name: user.name,
 						login_current: date, 
 						login_previous: user.login_current
 					}));
 			}).then((user) => {
 				// construct output and inject header
-				return { token: this.generateJWT(user), user: user };
+				return { token: this.generateJWT(user, userAgent), user: user };
 			});
 	}
 
@@ -71,7 +72,7 @@ class Auth extends Service {
      * @param {String} authorization The auth string from the request header, to verify
      * @return {Object} The user object to return if verified
      */
-	verify(authorization) {
+	verify(authorization, userAgent) {
 		let payload;
 		let jwt = authorization.replace('Bearer', '').trim();
 
@@ -97,12 +98,14 @@ class Auth extends Service {
 
 		// have we switched origins?
 		if (payload.aud !== this.$client.origin) throw new RestError('Origin / Token missmatch, invalid', 401);
+		if (payload.userAgent !== userAgent) throw new RestError('Client browser has changed, invalid', 401);
 
 		let userModel = new UserModel();
 
 		return userModel.getAuthedFromUUID(payload.uuid)
 			.then((user) => {
 				if (!user) throw new RestError('User not found, please try again.', 404);
+				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
 				
 				// cache user for system use
 				this.user = user;
@@ -110,10 +113,27 @@ class Auth extends Service {
 				// return basic user details when hit directly
 				return { user: {
 					uuid: user.uuid,
-					email: user.email,
+					name: user.name,
 					login_current: user.login_current,
 					login_previous: user.login_previodus
 				}};
+			}).then((stuff) => {
+
+
+				return userModel.getAllPermisions(this.user.id, 1);
+
+
+			}).then((perms) => {
+				console.log(perms);
+
+				return {
+					user: {
+						uuid: this.user.uuid,
+						name: this.user.name,
+						login_current: this.user.login_current,
+						login_previous: this.user.login_previodus
+					}
+				};
 			});
 	}
 
@@ -148,14 +168,15 @@ class Auth extends Service {
      * @param {Object} user The user object to use for the JWT
      * @return {String} JWT token
      */
-	generateJWT(user) {
+	generateJWT(user, userAgent) {
 		return JWT.sign({
 			iss: this.$environment.JWTIssuer,
 			aud: this.$client.origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
-			uuid: user.uuid
+			uuid: user.uuid,
+			userAgent: userAgent
 		}, process.env.JWTKey, { algorithm: 'HS256' });
 	}
 
