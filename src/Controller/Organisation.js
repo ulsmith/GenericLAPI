@@ -25,17 +25,17 @@ class Organisation extends Controller {
 
     /**
      * @public @method get
-     * @description Ping the system to check whats Organisation and whats not
+     * @description Get the resource from the backend by an identifier
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.123', 'read');
+		this.$services.auth.hasPermission('api.controller.organisation', 'read');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.xy4z', 'read') 
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'read');
 
 		let organisation = new OrganisationModel();
 		
@@ -48,8 +48,69 @@ class Organisation extends Controller {
 			name_unique: org.name_unique,
 			description: org.description,
 		})).catch((error) => {
-			throw new RestError('Invalid request, please check uuid is valid', 400);
+			throw new RestError('Invalid request, please use a valid uuid to request this resource', 400);
 		});
+	}
+
+    /**
+     * @public @method post
+     * @description Post (create) a brand new record at this resource
+     * @param {*} event The event that caused the controller to run
+     * @param {*} context The context of the invocation from AWS lambda
+     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     */
+	post(event, context) {
+		// check permissions for access, throws rest error on failure.
+		this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+
+	}
+
+    /**
+     * @public @method put
+     * @description Put (replace) an existing record with this one at this resource
+     * @param {*} event The event that caused the controller to run
+     * @param {*} context The context of the invocation from AWS lambda
+     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     */
+	put(event, context) {
+		// check permissions for access, throws rest error on failure.
+		this.$services.auth.hasPermission('api.controller.organisation', 'write');
+
+		// if not your logged in organisation, check access, throws rest error if not allowed
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+
+	}
+
+    /**
+     * @public @method patch
+     * @description Patch (update) an existing record with these changes at this resource
+     * @param {*} event The event that caused the controller to run
+     * @param {*} context The context of the invocation from AWS lambda
+     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     */
+	patch(event, context) {
+		// check permissions for access, throws rest error on failure.
+		this.$services.auth.hasPermission('api.controller.organisation', 'write');
+
+		// if not your logged in organisation, check access, throws rest error if not allowed
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+
+	}
+
+    /**
+     * @public @method delete
+     * @description Delete the specified record from this resource
+     * @param {*} event The event that caused the controller to run
+     * @param {*} context The context of the invocation from AWS lambda
+     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     */
+	delete(event, context) {
+		// check permissions for access, throws rest error on failure.
+		this.$services.auth.hasPermission('api.controller.organisation', 'delete');
+
+		// if not your logged in organisation, check access, throws rest error if not allowed
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'delete');
+
 	}
 }
 

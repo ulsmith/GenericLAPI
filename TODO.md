@@ -8,19 +8,19 @@
 
 ## endpoints
 
-* CRUD organisation
-* CRUD department
-* CRUD user
-* CRUD group
-* CRUD role
+* RWD organisation
+* RWD department
+* RWD user
+* RWD group
+* RWD role
 
-* CRUD department to org
-* CRUD user to department
+* RWD department to org
+* RWD user to department
 
-* CRUD group to department
-* CRUD group to user
+* RWD group to department
+* RWD group to user
 
-* CRUD role to user
-* CRUD role to department
-* CRUD role to group
+* RWD role to user
+* RWD role to department
+* RWD role to group
 
