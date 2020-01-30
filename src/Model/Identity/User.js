@@ -40,24 +40,24 @@ class User extends Model {
 	getAuthedFromUUID(uuid) {
 		return this.db
 			.select(
-				'identity.user.id',
-				'identity.user.uuid',
-				'identity.user.name',
-				'identity.user.active',
-				'identity.user_account.user_agent',
-				'identity.user_account.login_current',
-				'identity.user_account.login_previous'
+				'user.id',
+				'user.uuid',
+				'user.name',
+				'user.active',
+				'user_account.user_agent',
+				'user_account.login_current',
+				'user_account.login_previous'
 			)
 			.from('identity.user')
-			.join('identity.user_identity', 'identity.user.id', 'identity.user_identity.user_id')
-			.join('identity.user_account', 'identity.user.id', 'identity.user_account.user_id')
-			.where('identity.user.uuid', uuid)
+			.join('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.join('identity.user_account', 'user.id', 'user_account.user_id')
+			.where('user.uuid', uuid)
 			.limit(1)
 			.then((data) => data[0] || undefined);
 	}
 
     /**
-     * @public @method getAuthedFromEmail
+     * @public @method getAuthedFromIdentity
      * @description Get authed user for logging in
      * @param {String} username The username to search for
      * @param {String} password The password to search for
@@ -75,25 +75,90 @@ class User extends Model {
 	 * JOIN "identity".user_identity ON "identity".user.id = "identity".user_identity.user_id
 	 * JOIN "identity".user_account ON "identity".user.id = "identity".user_account.user_id
 	 * WHERE "identity".user_identity.identity = '...@...'
-	 * AND "identity".user_identity.type = 'email'
+	 * AND "identity".user_identity.type = '...'
 	 * LIMIT 1;
      */
-	getAuthedFromEmail(email, password) {
+	getAuthedFromIdentity(identity, type) {
 		return this.db
 			.select(
-				'identity.user.id',
-				'identity.user.uuid',
-				'identity.user.name',
-				'identity.user.active',
-				'identity.user_account.password',
-				'identity.user_account.login_current',
-				'identity.user_account.login_previous'
+				'user.id',
+				'user.uuid',
+				'user.name',
+				'user.active',
+				'user_account.password',
+				'user_account.login_current',
+				'user_account.login_previous'
 			)
 			.from('identity.user')
-			.join('identity.user_identity', 'identity.user.id', 'identity.user_identity.user_id')
-			.join('identity.user_account', 'identity.user.id', 'identity.user_account.user_id')
-			.where('identity.user_identity.identity', email)
-			.andWhere('identity.user_identity.type', 'email')
+			.join('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.join('identity.user_account', 'user.id', 'user_account.user_id')
+			.where('user_identity.identity', identity)
+			.andWhere('user_identity.type', type)
+			.limit(1)
+			.then((data) => data[0] || undefined);
+	}
+
+    /**
+     * @public @method getUserOrganisations
+     * @description Get authed user for logging in
+     * @param {Number} userID The user id to fetch orgs for
+     * @return Promise a resulting promise with an error to feed back or data to send on
+	 *
+	 * SELECT DISTINCT
+	 *	"organisation"."id",
+	 *	"organisation"."uuid",
+	 *	"organisation"."name",
+	 *	"organisation"."name_unique",
+	 *	"organisation"."description"
+	 * FROM "identity"."user_department"
+	 * JOIN "identity"."organisation" ON "organisation"."id" = "user_department"."department_organisation_id"
+	 * WHERE "user_department"."user_id" = 1
+     */
+	getUserOrganisations(userID) {
+		return this.db
+			.select(
+				'organisation.id',
+				'organisation.uuid',
+				'organisation.name',
+				'organisation.name_unique',
+				'organisation.description'
+			)
+			.from('identity.user_department')
+			.join('identity.organisation', 'organisation.id', 'user_department.department_organisation_id')
+			.where('user_department.user_id', userID)
+			.orderBy('organisation.name', 'ASC');
+	}
+
+    /**
+     * @public @method getUserOrganisation
+     * @description Get authed user for logging in
+     * @param {Number} userID The user id to fetch org for
+     * @param {Number} organisationUUID The organisation uuid to fetch org for
+     * @return Promise a resulting promise with an error to feed back or data to send on
+	 *
+	 * SELECT DISTINCT
+	 *	"organisation"."id",
+	 *	"organisation"."uuid",
+	 *	"organisation"."name",
+	 *	"organisation"."name_unique",
+	 *	"organisation"."description"
+	 * FROM "identity"."user_department"
+	 * JOIN "identity"."organisation" ON "organisation"."id" = "user_department"."department_organisation_id"
+	 * WHERE "user_department"."user_id" = 1
+     */
+	getUserOrganisation(userID, organisationUUID) {
+		return this.db
+			.select(
+				'organisation.id',
+				'organisation.uuid',
+				'organisation.name',
+				'organisation.name_unique',
+				'organisation.description'
+			)
+			.from('identity.user_department')
+			.join('identity.organisation', 'organisation.id', 'user_department.department_organisation_id')
+			.where('user_department.user_id', userID)
+			.where('organisation.uuid', organisationUUID)
 			.limit(1)
 			.then((data) => data[0] || undefined);
 	}
@@ -101,12 +166,12 @@ class User extends Model {
     /**
      * @public @method getAllPermisions
      * @description Get permissions for a user, along with role name
-     * @param {Number} user_id The id of the user to search for
-     * @param {Number} organisation_id The id of the organisation to search for
+     * @param {Number} userID The id of the user to search for
+     * @param {Number} organisationID The id of the organisation to search for
      * @return Promise a resulting promise with an error to feed back or data to send on
 	 *
 	 * SELECT
-	 *	"role"."name" AS "role"
+	 *	"role"."name_unique" AS "role"
 	 *	, COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
 	 *	, COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
 	 *	, COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
@@ -123,39 +188,39 @@ class User extends Model {
 	 * LEFT JOIN "identity".department_group ON "identity".department_group.department_id = "identity".user_department.department_id
 	 * LEFT JOIN "identity".group_role AS department_group_role ON department_group_role.group_id = "identity".department_group.group_id AND department_group_role.role_id = role.id
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
-	 * GROUP BY "identity".role.name
-	 * ORDER BY "identity".role.name;
+	 * GROUP BY "identity".role.name_unique
+	 * ORDER BY "identity".role.name_unique ASC;
      */
-	getAllPermisions(user_id, organisation_id) {
+	getAllPermisions(userID, organisationID) {
 		return this.db
 			.select(
-				'role.name AS role',
+				'role.name_unique AS role',
 				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
 				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', user_id).andOn('user_department.department_organisation_id', '=', organisation_id) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
 			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
 			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
 			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
-			.groupBy('role.name')
-			.orderBy('role.name', 'ASC');
+			.groupBy('role.name_unique')
+			.orderBy('role.name_unique', 'ASC');
 	}
 
     /**
      * @public @method getAllPermisions
      * @description Get permissions starting with match, for a user, along with role name
      * @param {String} match The partial match for the role name
-     * @param {Number} user_id The id of the user to search for
-     * @param {Number} organisation_id The id of the organisation to search for
+     * @param {Number} userID The id of the user to search for
+     * @param {Number} organisationID The id of the organisation to search for
      * @return Promise a resulting promise with an error to feed back or data to send on
 	 *
 	 * SELECT
-	 *	"role"."name" AS "role"
+	 *	"role"."name_unique" AS "role"
 	 *	, COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
 	 *	, COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
 	 *	, COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
@@ -172,42 +237,42 @@ class User extends Model {
 	 * LEFT JOIN "identity".department_group ON "identity".department_group.department_id = "identity".user_department.department_id
 	 * LEFT JOIN "identity".group_role AS department_group_role ON department_group_role.group_id = "identity".department_group.group_id AND department_group_role.role_id = role.id
 	 * -- reduce to specific role
-	 * WHERE "role"."name" LIKE '...%'
+	 * WHERE "role"."name_unique" LIKE '...%'
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
-	 * GROUP BY "identity".role.name
-	 * ORDER BY "identity".role.name;
+	 * GROUP BY "identity".role.name_unique
+	 * ORDER BY "identity".role.name_unique ASC;
      */
-	getPermisions(match, user_id, organisation_id) {
+	getPermisions(match, userID, organisationID) {
 		return this.db
 			.select(
-				'role.name AS role',
+				'role.name_unique AS role',
 				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
 				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', user_id).andOn('user_department.department_organisation_id', '=', organisation_id) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
 			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
 			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
 			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
-			.where('role.name', 'LIKE', match + '%')
-			.groupBy('role.name')
-			.orderBy('role.name', 'ASC');
+			.where('role.name_unique', 'LIKE', match + '%')
+			.groupBy('role.name_unique')
+			.orderBy('role.name_unique', 'ASC');
 	}
 
     /**
      * @public @method getPermision
      * @description Get a permission for a user, along with role name
      * @param {String} match The full match for the role name
-     * @param {Number} user_id The id of the user to search for
-     * @param {Number} organisation_id The id of the organisation to search for
+     * @param {Number} userID The id of the user to search for
+     * @param {Number} organisationID The id of the organisation to search for
      * @return Promise a resulting promise with an error to feed back or data to send on
 	 *
 	 * SELECT
-	 *	"role"."name" AS "role"
+	 *	"role"."name_unique" AS "role"
 	 *	, COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
 	 *	, COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
 	 *	, COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
@@ -224,30 +289,29 @@ class User extends Model {
 	 * LEFT JOIN "identity".department_group ON "identity".department_group.department_id = "identity".user_department.department_id
 	 * LEFT JOIN "identity".group_role AS department_group_role ON department_group_role.group_id = "identity".department_group.group_id AND department_group_role.role_id = role.id
 	 * -- reduce to specific role
-	 * WHERE "role"."name" = '...'
+	 * WHERE "role"."name_unique" = '...'
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
-	 * GROUP BY "identity".role.name
+	 * GROUP BY "identity".role.name_unique
 	 * LIMIT 1;
      */
-	getPermision(match, user_id, organisation_id) {
+	getPermision(match, userID, organisationID) {
 		return this.db
 			.select(
-				'role.name AS role',
+				'role.name_unique AS role',
 				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
 				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', user_id).andOn('user_department.department_organisation_id', '=', organisation_id) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
 			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
 			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
 			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
-			.where('role.name', match)
-			.groupBy('role.name')
-			.orderBy('role.name', 'ASC')
+			.where('role.name_unique', match)
+			.groupBy('role.name_unique')
 			.limit(1);
 	}
 }

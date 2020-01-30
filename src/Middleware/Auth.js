@@ -49,7 +49,7 @@ class Auth extends Middleware {
 		if (event.headers.Authorization.split(' ')[0].toLowerCase() !== 'bearer') throw new RestError('Malformed Token due to missing "Bearer", invalid', 401);
 
 		// verify against auth service, throws restError on failure
-		return this.$services.auth.verify(event.headers.Authorization);
+		return this.$services.auth.verify(event.headers.Authorization, event.requestContext.identity.userAgent);
 	}
 }
 

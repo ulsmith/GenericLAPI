@@ -26,21 +26,26 @@ class Auth extends Service {
 		super();
 
 		this.user;
+		this.organisation;
+		this.permissions;
 	}
 
     /**
      * @public @method login
-	 * @description Log a user in based on username and password
-     * @param {String} username The resource to fetch with the given key
+	 * @description Log a user in based on identity and password
+     * @param {String} identity The resource to fetch with the given key
      * @param {String} password The resource to fetch with the given key
      * @param {String} ip The resource to fetch with the given key
      * @return Promise a resulting promise with an error to feed back or data to send on
      */
-	login(username, password, userAgent) {
+	login(identity, identityType, password, organisationUUID, userAgent) {
+		if (!identity || !password) throw new RestError('Login details incorrect, please try again.', 401);
+		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Login details incorrect, please try again.', 401);
+
 		let userModel = new UserModel();
 		let userAccountModel = new UserAccountModel();
 
-		return userModel.getAuthedFromEmail(username)
+		return userModel.getAuthedFromIdentity(identity, identityType)
 			.then((user) => {
 				// NOTE: need to flood prevent here too
 				if (!user) throw new RestError('Login details incorrect, please try again.', 401);
@@ -48,21 +53,49 @@ class Auth extends Service {
 				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
 				
 				return user;
-			}).then((user) => {
-				let date = new Date();
+			})
+			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({user: user, orgs: orgs})))		
+			.then((userOrgs) => {
+				// check we are in at least one organisation
+				if (userOrgs.orgs.length === 0) throw new RestError('User is not part of any organisation, please try again later.', 403);
 
-				// update user but return data from before update so last logged on correct
+				let org = userOrgs.orgs[0];
+
+				// we have more than one org, so user must remake request with org uuid, give them choice
+				if (userOrgs.orgs.length > 1) {
+					let orgs = userOrgs.orgs.filter((data) => data.uuid === organisationUUID);
+
+					if (org.length !== 1) {
+						throw new RestError({
+							'message': 'User is part of many organisations, please add [organisationUUID] to request.',
+							'organisations': userOrgs.orgs
+						}, 403);
+					}
+
+					org = orgs[0];
+				}
+
+				// update user, get permissions for UI and return token, only one org so must be that one
+				let date = new Date();
 				return userAccountModel
-					.update(user.id, { login_current: date, login_previous: user.login_current, user_agent: userAgent })
-					.then((update) => ({
-						uuid: user.uuid, 
-						name: user.name,
-						login_current: date, 
-						login_previous: user.login_current
+					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent })
+					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org.id))
+					.then((perms) => ({
+						token: this.generateJWT(userOrgs.user, org, userAgent),
+						user: {
+							uuid: userOrgs.user.uuid,
+							name: userOrgs.user.name,
+							login_current: date,
+							login_previous: userOrgs.user.login_current
+						},
+						organisation: {
+							uuid: org.uuid,
+							name: org.name,
+							name_unique: org.name_unique,
+							description: org.description
+						},
+						permissions: perms
 					}));
-			}).then((user) => {
-				// construct output and inject header
-				return { token: this.generateJWT(user, userAgent), user: user };
 			});
 	}
 
@@ -92,7 +125,7 @@ class Auth extends Service {
 				message: 'Authorization failed, please log in to authorize.',
 				method: 'POST',
 				url: this.$environment.JWTIssuer + '/account/authenticate',
-				body: { username: '', password: '' }
+				body: { identity: '', password: '' }
 			}, 401);
 		}
 
@@ -102,21 +135,35 @@ class Auth extends Service {
 
 		let userModel = new UserModel();
 
-		return userModel.getAuthedFromUUID(payload.uuid)
-			.then((user) => {
-				if (!user) throw new RestError('User not found, please try again.', 404);
-				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
+		return userModel.getAuthedFromUUID(payload.userUUID)
+			.then((user) => userModel.getUserOrganisation(user.id, payload.organisationUUID).then((org) => ({ user: user, org: org })))
+			.then((userOrg) => userModel.getAllPermisions(userOrg.user.id, userOrg.org.id).then((perms) => ({ user: userOrg.user, org: userOrg.org, perms: perms})))
+			.then((userOrgPerms) => {
+				if (!userOrgPerms.user) throw new RestError('User not found, please try again.', 404);
+				if (!userOrgPerms.org) throw new RestError('Organisation not found, please try again later.', 404);
+				if (!userOrgPerms.user.active) throw new RestError('User is not active, please try again later.', 401);
 				
 				// cache user for system use
-				this.user = user;
-
+				this.user = userOrgPerms.user;
+				this.organisation = userOrgPerms.org;
+				this.permissions = userOrgPerms.perms;
+				
 				// return basic user details when hit directly
-				return { user: {
-					uuid: user.uuid,
-					name: user.name,
-					login_current: user.login_current,
-					login_previous: user.login_previodus
-				}};
+				return { 
+					user: {
+						uuid: this.user.uuid,
+						name: this.user.name,
+						login_current: this.user.login_current,
+						login_previous: this.user.login_previodus
+					},
+					organisation: {
+						uuid: this.organisation.uuid,
+						name: this.organisation.name,
+						name_unique: this.organisation.name_unique,
+						description: this.organisation.description
+					},
+					permissions: this.permissions.filter((perm) => perm.role.indexOf('ui.') === 0)
+				};
 			});
 	}
 
@@ -140,7 +187,7 @@ class Auth extends Service {
 				message: 'Authorization failed, please log in to authorize.',
 				method: 'POST',
 				url: this.$environment.JWTIssuer + '/account/authenticate',
-				body: { username: '', password: '' }
+				body: { identity: '', password: '' }
 			}, 401);
 		}
 	}
@@ -151,14 +198,15 @@ class Auth extends Service {
      * @param {Object} user The user object to use for the JWT
      * @return {String} JWT token
      */
-	generateJWT(user, userAgent) {
+	generateJWT(user, organisation, userAgent) {
 		return JWT.sign({
 			iss: this.$environment.JWTIssuer,
 			aud: this.$client.origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
-			uuid: user.uuid,
+			userUUID: user.uuid,
+			organisationUUID: organisation.uuid,
 			userAgent: userAgent
 		}, process.env.JWTKey, { algorithm: 'HS256' });
 	}
@@ -185,9 +233,35 @@ class Auth extends Service {
 		return JWT.sign(decoded.payload, process.env.JWTKey, { algorithm: 'HS256' });
 	}
 
+    /**
+     * @public @method hasPermission
+	 * @description Fetch permission to check, throws rest error on failure.
+     * @param {String} role The role to check
+     * @param {String} type The access type to check
+     */
+	hasPermission(role, type) { 
+		if (!this.getPermission(role)[type]) {
+			console.log(`[UserUUID: ${this.user.uuid}, OrgUUID: ${this.organisation.uuid}] No '${type}' access to '${role}' role`);
+			throw new RestError(`Permission denied, you do not have '${type}' access to this resource`, 403);
+		}
+	}
 
 
+    /**
+     * @public @method getPermission
+	 * @description Fetch permission to check
+     * @param {String} role The role to check
+     * @return {Object} Do you have permission, permission object
+     */
+	getPermission(role) { return this.$services.auth.permissions.find((perm) => perm.role === role) || {} }
 
+    /**
+     * @public @method getPermissions
+	 * @description Fetch permissions to check
+     * @param {String} prefix The partial role prefix to match from the beginning of a role
+     * @return {Array} Do you have permissions, array of permission objects
+     */
+	getPermissions(prefix) { return this.$services.auth.permissions.filter((perm) => perm.role.indexOf(prefix) === 0) || [] }
 }
 
 module.exports = Auth;

@@ -53,8 +53,8 @@ exports.handler = (event, context, callback) => {
 	event.parsedBody = !!event.body && event.headers['Content-Type'] === 'application/json' ? event.parsedBody = JSON.parse(event.body) : {};
 
 	// strip out params to array
-	event.params = [];
-	if (!!event.pathParameters) event.params = event.pathParameters.params.split('/');
+	// event.params = [];
+	// if (!!event.pathParameters) event.params = event.pathParameters.params.split('/');
 
 	// we are pretty much ready now, so lets set up some singleton services that can hold state accross the system
 	process.__client = {

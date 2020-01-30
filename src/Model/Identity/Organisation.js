@@ -19,7 +19,15 @@ class Organisation extends Model {
 	 */
     constructor() {
 		super('identity.organisation');
-    }
+	}
+
+    /**
+	 * @public @method getFromUUID
+	 * @description Get a single resource in a single table by table id
+     * @param {String} uuid The resource uuid to get
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0] || {}) }
 }
 
 module.exports = Organisation;

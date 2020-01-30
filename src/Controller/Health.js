@@ -4,8 +4,8 @@ const Controller = require('../System/Controller.js');
 const HealthModel = require('../Model/Public/Health.js');
 
 /**
- * @namespace API/Controller/Account
- * @class Authenticate
+ * @namespace API/Controller
+ * @class Health
  * @extends Controller
  * @description Controller class exposing methods over the routed endpoint
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>

@@ -1,14 +1,10 @@
 # TODO
 
-* add basic UI permissions
-
-ui.route.abc
-
-* return all UI permissions on authentication (get/post)
-
-* if login has one org, use that
-* if login has multiple org, return list of orgs, ask to add org to login
-* adjust login to accept org uuid too from above
+* [DONE] if login has one org, use that
+* [DONE] if login has multiple org, return list of orgs, ask to add org to login
+* [DONE] adjust login to accept org uuid too from above
+* [DONE] verify org too from uuid
+* [DONE] return all UI permissions on authentication (get/post)
 
 ## endpoints
 

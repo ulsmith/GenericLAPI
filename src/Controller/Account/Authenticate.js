@@ -37,9 +37,13 @@ class Authenticate extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	post(event) {
-		if (!event.parsedBody.username || !event.parsedBody.password) throw new RestError('We could not log you in, please try again.', 401);
-
-        return this.$services.auth.login(event.parsedBody.username, event.parsedBody.password, event.requestContext.identity.userAgent);
+        return this.$services.auth.login(
+            event.parsedBody.identity, 
+            event.parsedBody.identityType || 'email', 
+            event.parsedBody.password, 
+            event.parsedBody.organisationUUID, 
+            event.requestContext.identity.userAgent
+        );
 	}
 
     /**
@@ -50,15 +54,20 @@ class Authenticate extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	get(event) {
-		if (!event.headers.Authorization) throw new RestError('We could not verify you, logging you out.', 401);
-
         return {
             user: {
                 uuid: this.$services.auth.user.uuid,
                 name: this.$services.auth.user.name,
                 login_current: this.$services.auth.user.login_current,
                 login_previous: this.$services.auth.user.login_previous
-            }
+            },
+            organisation: {
+                uuid: this.$services.auth.organisation.uuid,
+                name: this.$services.auth.organisation.name,
+                name_unique: this.$services.auth.organisation.name_unique,
+                description: this.$services.auth.organisation.description
+            },
+            permissions: this.$services.auth.permissions.filter((perm) => perm.role.indexOf('ui.') === 0)
         };
 	}
 }

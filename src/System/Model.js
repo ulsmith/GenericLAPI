@@ -46,7 +46,7 @@ class Model extends Core {
      * @param {Number} id The resource id to get
      * @return {Promise} a resulting promise of data or error on failure
      */
-	get(id) { return this.model.where({id: id}).limit(1) }
+	get(id) { return this.model.where({id: id}).limit(1).then((data) => data[0] || {}) }
 
     /**
      * @public @method find
