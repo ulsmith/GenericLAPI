@@ -5,6 +5,10 @@
 * [DONE] adjust login to accept org uuid too from above
 * [DONE] verify org too from uuid
 * [DONE] return all UI permissions on authentication (get/post)
+* [DONE] allow login without any organisation
+* [DONE] if organisation present, has to be active to log in
+* Need to switch to method not allowed if route is reachable but not for that method, with a 405, push to application handler directly
+* Fix the patch to orgs, should throw not found if the org not found.
 
 ## endpoints
 

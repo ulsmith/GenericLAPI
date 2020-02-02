@@ -116,6 +116,29 @@ class Model extends Core {
 	}
 
     /**
+     * @public @method checkColumns
+	 * @description Check columns against dataset
+     * @param {Object} data The data to check against the columns
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	checkColumns(data) {
+		for (const key in data) if (!this.columns[key]) return false;
+		return true
+	}
+
+    /**
+     * @public @method checkColumnsStrict
+	 * @description Check columns against dataset, ensure required are present too
+     * @param {Object} data The data to check against the columns
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	checkColumnsStrict(data) {
+		for (const key in data) if (this.columns[key] === undefined) return false;
+		for (const key in this.columns) if (data[key] === undefined && this.columns[key].required) return false;
+		return true
+	}
+
+    /**
      * @private @method __cleanIncommingData
 	 * @description Clean any incomming data free of default values set by the DB directly
      * @param {Object} data The resource id to delete

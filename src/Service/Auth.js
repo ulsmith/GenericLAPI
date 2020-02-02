@@ -56,9 +56,6 @@ class Auth extends Service {
 			})
 			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({user: user, orgs: orgs})))		
 			.then((userOrgs) => {
-				// check we are in at least one organisation
-				if (userOrgs.orgs.length === 0) throw new RestError('User is not part of any organisation, please try again later.', 403);
-
 				let org = userOrgs.orgs[0];
 
 				// we have more than one org, so user must remake request with org uuid, give them choice
@@ -75,27 +72,37 @@ class Auth extends Service {
 					org = orgs[0];
 				}
 
+				// if we do have an org chosen, check active too
+				if (!!org && !org.active) throw new RestError('Organisation is not active, please try again later.', 401);
+
 				// update user, get permissions for UI and return token, only one org so must be that one
 				let date = new Date();
 				return userAccountModel
 					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent })
-					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org.id))
-					.then((perms) => ({
-						token: this.generateJWT(userOrgs.user, org, userAgent),
-						user: {
-							uuid: userOrgs.user.uuid,
-							name: userOrgs.user.name,
-							login_current: date,
-							login_previous: userOrgs.user.login_current
-						},
-						organisation: {
-							uuid: org.uuid,
-							name: org.name,
-							name_unique: org.name_unique,
-							description: org.description
-						},
-						permissions: perms
-					}));
+					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org ? org.id : undefined))
+					.then((perms) => {
+						let result = { 
+							token: this.generateJWT(userOrgs.user, org, userAgent),
+							user: {
+								uuid: userOrgs.user.uuid,
+								name: userOrgs.user.name,
+								login_current: date,
+								login_previous: userOrgs.user.login_current
+							},
+							permissions: perms
+						};
+						
+						if (org) {
+							result.organisation = {
+								uuid: org.uuid,
+								name: org.name,
+								name_unique: org.name_unique,
+								description: org.description
+							};
+						}
+
+						return result;
+					});
 			});
 	}
 
@@ -206,7 +213,7 @@ class Auth extends Service {
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
 			userUUID: user.uuid,
-			organisationUUID: organisation.uuid,
+			organisationUUID: organisation ? organisation.uuid : undefined,
 			userAgent: userAgent
 		}, process.env.JWTKey, { algorithm: 'HS256' });
 	}

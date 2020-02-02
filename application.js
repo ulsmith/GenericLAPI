@@ -20,13 +20,19 @@ exports.handler = (event, context, callback) => {
 	event.headers.Origin = event.headers.Origin || event.headers.origin;
 	event.headers.Authorization = event.headers.Authorization || event.headers.authorization;
 	event.headers['Content-Type'] = event.headers['Content-Type'] || event.headers['content-type'];
+	event.pathParameters = event.pathParameters ? event.pathParameters : {};
+	event.parsedBody = event.parsedBody ? event.parsedBody : {};
 
 	// preset a response, preset default headers
 	var response = { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }, statusCode: 200, body: JSON.stringify({})};
 
-    // no route found, through 404
-    if (!!((event.pathParameters || {}).error || false)) return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.pathParameters.error + ']')});
-    
+	// no route found, through 404
+    if (!!((event.pathParameters || {}).error || false)) {
+		if (event.pathParameters.error) {
+			event.resource = '/' + event.pathParameters.error;
+		}
+	}
+		
 	// Get Resource and UCWORDS it end_point > EndPoint
     let resource = event.resource.split('/');
 
@@ -37,15 +43,16 @@ exports.handler = (event, context, callback) => {
         name += resource[i].replace('_', '-').replace(/\b[a-z]/g, (char) => { return char.toUpperCase() });
         path += resource[i].replace('_', '-').replace(/\b[a-z]/g, (char) => { return char.toUpperCase() }) + '/';
     }
-    path = path.substring(0, path.length -1) + '.js';
-
+	path = path.substring(0, path.length -1) + '.js';
+	
     // load controller
     let controller = {};
     try {
 		controller[name] = require('./src/Controller/' + path);
 		event.controller = { path: './src/Controller/' + path, name: name, access: controller[name][event.httpMethod.toLowerCase()]};
-    } catch (error) {
-        if (process.env.Mode === 'development') console.log(error);
+		if (event.pathParameters.error) callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
+	} catch (error) {
+		if (process.env.Mode === 'development') console.log(error);
         return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.resource + ']') });
 	}
 
@@ -74,6 +81,15 @@ exports.handler = (event, context, callback) => {
 	
 	// run controller and catch result
 	.then(() => new controller[name]()[event.httpMethod.toLowerCase()](event, context))
+	.catch((error) => {
+		// look for method nto allowed first
+		if (
+			error.name.toLowerCase() === 'typeerror' 
+			&& error.message.toLowerCase().indexOf('is not a function') > 0 
+			&& error.message.toLowerCase().indexOf('event.httpMethod.toLowerCase') > 0
+		) callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
+		throw error;
+	})
 	.then((payload) => {
         // build up response
         response.statusCode = !!payload.statusCode ? payload.statusCode : 200;
@@ -82,6 +98,7 @@ exports.handler = (event, context, callback) => {
 
 		return response;
 	}).catch((error) => {
+		// catch any other errors
 		if (error.name !== 'RestError') console.log(error);
 
         // build up response

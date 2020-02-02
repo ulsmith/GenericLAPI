@@ -121,6 +121,7 @@ class User extends Model {
 				'organisation.uuid',
 				'organisation.name',
 				'organisation.name_unique',
+				'organisation.active',
 				'organisation.description'
 			)
 			.from('identity.user_department')
@@ -147,12 +148,15 @@ class User extends Model {
 	 * WHERE "user_department"."user_id" = 1
      */
 	getUserOrganisation(userID, organisationUUID) {
+		if (!organisationUUID) return Promise.resolve([]);
+
 		return this.db
 			.select(
 				'organisation.id',
 				'organisation.uuid',
 				'organisation.name',
 				'organisation.name_unique',
+				'organisation.active',
 				'organisation.description'
 			)
 			.from('identity.user_department')
@@ -200,7 +204,7 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
@@ -251,7 +255,7 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
@@ -303,7 +307,7 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID) })
+			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
 			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user_department.user_id') })
 			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
 			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')

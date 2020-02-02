@@ -3,6 +3,7 @@
 const Controller = require('../System/Controller.js');
 const RestError = require('../System/RestError.js');
 const OrganisationModel = require('../Model/Identity/Organisation.js');
+const ObjectTools = require('../Library/ObjectTools.js');
 
 /**
  * @namespace API/Controller
@@ -32,24 +33,26 @@ class Organisation extends Controller {
      */
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.organisation', 'read');
+		this.$services.auth.hasPermission('api.crud.organisation', 'read');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'read');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'read');
 
 		let organisation = new OrganisationModel();
 		
-		return organisation.getFromUUID(event.pathParameters.uuid).then((org) => ({
-			uuid: org.uuid,
-			created: org.created,
-			updated: org.updated,
-			active: org.active,
-			name: org.name,
-			name_unique: org.name_unique,
-			description: org.description,
-		})).catch((error) => {
-			throw new RestError('Invalid request, please use a valid uuid to request this resource', 400);
-		});
+		return organisation
+			.getFromUUID(event.pathParameters.uuid)
+			.then((org) => ({
+				uuid: org.uuid,
+				created: org.created,
+				updated: org.updated,
+				active: org.active,
+				name: org.name,
+				name_unique: org.name_unique,
+				description: org.description,
+			})).catch((error) => {
+				throw new RestError('Invalid request, please use a valid uuid to request this resource', 400);
+			});
 	}
 
     /**
@@ -60,9 +63,26 @@ class Organisation extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
 	post(event, context) {
-		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+		// no path parameter allowed for post
+		if (event.pathParameters) throw new RestError('Method not allowed with route parameter', 405);
 
+		// check permissions for access, throws rest error on failure.
+		this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
+
+		let organisation = new OrganisationModel();
+
+		// check full dataset
+		if (organisation.checkColumnsStrict(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
+
+		return organisation
+			.insert({
+				active: event.parsedBody.active,
+				name: event.parsedBody.name,
+				name_unique: event.parsedBody.name_unique,
+				description: event.parsedBody.description,
+			}).then((result) => ({'message': 'Inserted record'})).catch((error) => { 
+				throw new RestError({message: 'Invalid request, could not add record', required: organisation.columns}, 400);
+			});
 	}
 
     /**
@@ -74,11 +94,34 @@ class Organisation extends Controller {
      */
 	put(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.organisation', 'write');
+		this.$services.auth.hasPermission('api.crud.organisation', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
 
+		let organisation = new OrganisationModel();
+		
+		// check full dataset
+		if (!organisation.checkColumnsStrict(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
+
+		return organisation
+			.getFromUUID(event.parsedBody.uuid || event.pathParameters.uuid)
+			.then((org) => { 
+				// quick check we have found the resource
+				if (!org.id) throw new RestError({ message: 'Could not find resource for UUID provided', required: organisation.columns }, 404);
+				return org;
+			})
+			.then((org) => organisation.update(org.id, {
+				active: event.parsedBody.active,
+				name: event.parsedBody.name,
+				name_unique: event.parsedBody.name_unique,
+				description: event.parsedBody.description,
+			}))
+			.then((result) => ({ 'message': 'Updated record'}))
+			.catch((error) => {
+				if (error.name === 'RestError') throw error;
+				throw new RestError({ message: 'Invalid request, could not update record', required: organisation.columns }, 400);
+			});
 	}
 
     /**
@@ -90,10 +133,13 @@ class Organisation extends Controller {
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.organisation', 'write');
+		this.$services.auth.hasPermission('api.crud.organisation', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'write');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
+
+		// check partial dataset
+		if (!organisation.checkColumns(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
 
 	}
 
@@ -106,10 +152,10 @@ class Organisation extends Controller {
      */
 	delete(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.controller.organisation', 'delete');
+		this.$services.auth.hasPermission('api.crud.organisation', 'delete');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.controller.organisation.all', 'delete');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'delete');
 
 	}
 }
