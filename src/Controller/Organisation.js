@@ -40,8 +40,7 @@ class Organisation extends Controller {
 
 		let organisation = new OrganisationModel();
 		
-		return organisation
-			.getFromUUID(event.pathParameters.uuid)
+		return organisation.getFromUUID(event.pathParameters.uuid)
 			.then((org) => ({
 				uuid: org.uuid,
 				created: org.created,
@@ -64,24 +63,18 @@ class Organisation extends Controller {
      */
 	post(event, context) {
 		// no path parameter allowed for post
-		if (event.pathParameters) throw new RestError('Method not allowed with route parameter', 405);
+		if (event.pathParameters.uuid) throw new RestError('Method not allowed with UUID route parameter', 405);
 
 		// check permissions for access, throws rest error on failure.
 		this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
 
 		let organisation = new OrganisationModel();
+		let mapped = organisation.mapDataToColumn(event.parsedBody);
 
-		// check full dataset
-		if (organisation.checkColumnsStrict(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
-
-		return organisation
-			.insert({
-				active: event.parsedBody.active,
-				name: event.parsedBody.name,
-				name_unique: event.parsedBody.name_unique,
-				description: event.parsedBody.description,
-			}).then((result) => ({'message': 'Inserted record'})).catch((error) => { 
-				throw new RestError({message: 'Invalid request, could not add record', required: organisation.columns}, 400);
+		return organisation.insert(mapped)
+			.then((result) => ({'message': 'Inserted record'}))
+			.catch((error) => { 
+				throw new RestError({message: 'Invalid data, could not add record', ...organisation.parseError(error)}, 400);
 			});
 	}
 
@@ -100,27 +93,18 @@ class Organisation extends Controller {
 		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
 
 		let organisation = new OrganisationModel();
-		
-		// check full dataset
-		if (!organisation.checkColumnsStrict(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
+		let mapped = organisation.mapDataToColumn(event.parsedBody);
 
-		return organisation
-			.getFromUUID(event.parsedBody.uuid || event.pathParameters.uuid)
+		return organisation.getFromUUID(event.pathParameters.uuid)
 			.then((org) => { 
-				// quick check we have found the resource
-				if (!org.id) throw new RestError({ message: 'Could not find resource for UUID provided', required: organisation.columns }, 404);
+				if (!org.id) throw new RestError({ message: 'Could not find resource for UUID provided', ...organisation.parseError()}, 404);
 				return org;
 			})
-			.then((org) => organisation.update(org.id, {
-				active: event.parsedBody.active,
-				name: event.parsedBody.name,
-				name_unique: event.parsedBody.name_unique,
-				description: event.parsedBody.description,
-			}))
-			.then((result) => ({ 'message': 'Updated record'}))
+			.then((org) => organisation.update(org.id, mapped))
+			.then(() => ({ 'message': 'Updated record'}))
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
-				throw new RestError({ message: 'Invalid request, could not update record', required: organisation.columns }, 400);
+				throw new RestError({ message: 'Invalid request, could not update record', ...organisation.parseError(error)}, 400);
 			});
 	}
 
@@ -139,8 +123,8 @@ class Organisation extends Controller {
 		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
 
 		// check partial dataset
-		if (!organisation.checkColumns(event.parsedBody)) throw new RestError({ message: 'Invalid request, required data missmatch', requiredColumns: organisation.columns }, 400);
-
+		let mapped = organisation.mapDataToColumn(event.parsedBody, true);
+		if (!mapped) throw new RestError({ message: 'Invalid request, must include at least one property in patch request', data: organisation.columns }, 400);
 	}
 
     /**
