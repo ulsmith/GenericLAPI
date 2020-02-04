@@ -19,7 +19,7 @@ class UserDepartment extends Model {
 	 */
     constructor() {
 		super('identity.user_department');
-    }
+	}
 }
 
 module.exports = UserDepartment;

@@ -22,9 +22,65 @@ class User extends Model {
 	}
 
     /**
-     * @public @method getFromUUID
+	 * @public @get @method columns
+	 * @description return columns for this model that we give access to
+     * @return {Object} The columns data that are accessable
+     */
+	get columns() {
+		return {
+			active: { type: 'boolean', required: true, description: 'User is active' },
+			name: { type: 'string', required: true, description: 'Full user name' }
+		};
+	}
+	
+	/**
+	 * @public @method getFromUUID
+	 * @description Get a single resource in a single table by table id
+     * @param {String} uuid The resource uuid to get
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0] || {}).catch(() => { return {} }) }
+
+	/**
+	 * @public @method getWithMetaFromUUID
+	 * @description Get a single resource with accompanying meta table data
+     * @param {String} uuid The resource uuid to get
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	getDetailsFromUUID(uuid) { 
+		return this.db
+			.select(
+				'user.*', 
+				'user_identity.identity AS identity_identity',
+				'user_identity.type AS identity_type',
+				'user_identity.primary AS identity_primary'
+			)
+			.from('identity.user')
+			.join('identity.user_account', 'user.id', 'user_account.user_id')
+			.join('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.where({ 'user.uuid': uuid })
+			.then((data) => {
+				if (data.length < 1) return {};
+				
+				let inflate = {identities: []};
+				for (let i = 0; i < data.length; i++) {
+					inflate.name = data[i].name;
+					inflate.active = data[i].active;
+					inflate.identities.push({
+						identity: data[i].identity_identity,
+						type: data[i].identity_type,
+						primary: data[i].identity_primary
+					});
+				}
+				return inflate;
+			})
+			.catch((error) => { console.log(error); return {} }) ;
+	}
+
+    /**
+     * @public @method getAuthedFromUUID
      * @description Get user data from UUID of user, pushed direct to UI
-     * @param {String} guid The GUID to search for
+     * @param {String} uuid The GUID to search for
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
 	 * 
 	 * SELECT

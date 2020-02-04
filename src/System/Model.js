@@ -2,6 +2,7 @@
 
 const Core = require('./Core.js');
 const RestError = require('./RestError.js');
+const DataTools = require('../Library/DataTools.js');
 
 /**
  * @namespace API/System
@@ -130,7 +131,7 @@ class Model extends Core {
 		for (const key in this.columns) {
 			if (data[key] === undefined && this.columns[key].required && !partial) throw new RestError({message: 'Invalid data, required property [' + key + '] missing', data: this.columns}, 400);
 			if (data[key] !== undefined) {
-				if (typeof data[key] !== this.columns[key].type.toLowerCase()) throw new RestError({ message: 'Invalid data, property [' + key + '] type incorrect', data: this.columns }, 400);
+				if (!DataTools.checkType(data[key], this.columns[key].type)) throw new RestError({ message: 'Invalid data, property [' + key + '] type incorrect', data: this.columns }, 400);
 				clean[key] = data[key];
 			}
 		}

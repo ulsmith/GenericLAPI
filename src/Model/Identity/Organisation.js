@@ -21,6 +21,11 @@ class Organisation extends Model {
 		super('identity.organisation');
 	}
 
+    /**
+	 * @public @get @method columns
+	 * @description return columns for this model that we give access to
+     * @return {Object} The columns data that are accessable
+     */
 	get columns() {
 		return {
 			active: { type: 'boolean', required: true, description: 'Organisation is active' },

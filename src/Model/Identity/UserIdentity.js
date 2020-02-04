@@ -19,7 +19,20 @@ class UserIdentity extends Model {
 	 */
     constructor() {
 		super('identity.user_identity');
-    }
+	}
+
+    /**
+	 * @public @get @method columns
+	 * @description return columns for this model that we give access to
+     * @return {Object} The columns data that are accessable
+     */
+	get columns() {
+		return {
+			identity: { type: 'string', required: true, description: 'User identity' },
+			type: { type: 'string', required: false, description: 'User identity type' },
+			primary: { type: 'timestamp', required: false, description: 'User identity primary type' }
+		};
+	}
 }
 
 module.exports = UserIdentity;

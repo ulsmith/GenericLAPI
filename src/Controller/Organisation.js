@@ -3,11 +3,10 @@
 const Controller = require('../System/Controller.js');
 const RestError = require('../System/RestError.js');
 const OrganisationModel = require('../Model/Identity/Organisation.js');
-const ObjectTools = require('../Library/ObjectTools.js');
 
 /**
  * @namespace API/Controller
- * @class Authenticate
+ * @class Organisation
  * @extends Controller
  * @description Controller class exposing methods over the routed endpoint
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
@@ -29,7 +28,7 @@ class Organisation extends Controller {
      * @description Get the resource from the backend by an identifier
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
-     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     * @return {Promise} Response promise resolved or rejected
      */
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
@@ -43,14 +42,12 @@ class Organisation extends Controller {
 		return organisation.getFromUUID(event.pathParameters.uuid)
 			.then((org) => ({
 				uuid: org.uuid,
-				created: org.created,
-				updated: org.updated,
 				active: org.active,
 				name: org.name,
 				name_unique: org.name_unique,
-				description: org.description,
+				description: org.description
 			})).catch((error) => {
-				throw new RestError('Invalid request, please use a valid uuid to request this resource', 400);
+				throw new RestError('Could not find resource for UUID provided', 400);
 			});
 	}
 
@@ -59,7 +56,7 @@ class Organisation extends Controller {
      * @description Post (create) a brand new record at this resource
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
-     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     * @return {Promise} Response promise resolved or rejected
      */
 	post(event, context) {
 		// no path parameter allowed for post
@@ -83,7 +80,7 @@ class Organisation extends Controller {
      * @description Put (replace) an existing record with this one at this resource
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
-     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     * @return {Promise} Response promise resolved or rejected
      */
 	put(event, context) {
 		// check permissions for access, throws rest error on failure.
@@ -113,7 +110,7 @@ class Organisation extends Controller {
      * @description Patch (update) an existing record with these changes at this resource
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
-     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     * @return {Promise} Response promise resolved or rejected
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
@@ -123,8 +120,20 @@ class Organisation extends Controller {
 		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'write');
 
 		// check partial dataset
+		let organisation = new OrganisationModel();
 		let mapped = organisation.mapDataToColumn(event.parsedBody, true);
-		if (!mapped) throw new RestError({ message: 'Invalid request, must include at least one property in patch request', data: organisation.columns }, 400);
+
+		return organisation.getFromUUID(event.pathParameters.uuid)
+			.then((org) => {
+				if (!org.id) throw new RestError({ message: 'Could not find resource for UUID provided', ...organisation.parseError() }, 404);
+				return org;
+			})
+			.then((org) => organisation.update(org.id, mapped))
+			.then(() => ({ 'message': 'Updated record' }))
+			.catch((error) => {
+				if (error.name === 'RestError') throw error;
+				throw new RestError({ message: 'Invalid request, could not update record', ...organisation.parseError(error) }, 400);
+			});
 	}
 
     /**
@@ -132,7 +141,7 @@ class Organisation extends Controller {
      * @description Delete the specified record from this resource
      * @param {*} event The event that caused the controller to run
      * @param {*} context The context of the invocation from AWS lambda
-     * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
+     * @return {Promise} Response promise resolved or rejected
      */
 	delete(event, context) {
 		// check permissions for access, throws rest error on failure.
@@ -141,6 +150,20 @@ class Organisation extends Controller {
 		// if not your logged in organisation, check access, throws rest error if not allowed
 		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.organisation.other', 'delete');
 
+		// check partial dataset
+		let organisation = new OrganisationModel();
+
+		return organisation.getFromUUID(event.pathParameters.uuid)
+			.then((org) => {
+				if (!org.id) throw new RestError('Could not find resource for UUID provided', 404);
+				return org;
+			})
+			.then((org) => organisation.delete(org.id))
+			.then(() => ({ 'message': 'Deleted record' }))
+			.catch((error) => {
+				if (error.name === 'RestError') throw error;
+				throw new RestError('Invalid request, please use a valid uuid to delete this resource', 400);
+			});
 	}
 }
 
