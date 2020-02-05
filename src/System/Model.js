@@ -62,10 +62,11 @@ class Model extends Core {
      * @public @method insert
 	 * @description Insert a single resource in a single table, clear any default data (id, created, updated)
      * @param {Object} data The object data to insert into the resource as {key: value}
+     * @param {String} data The object data to insert into the resource as {key: value}
      * @return {Promise} a resulting promise of data or error on failure
      */
-	insert(data) { 
-		return this.model.insert(this.__cleanIncommingData(data));
+	insert(data, returning) { 
+		return this.model.insert(this.__cleanIncommingData(data)).returning(returning || 'id');
 	}
 
     /**
@@ -119,23 +120,40 @@ class Model extends Core {
 
     /**
      * @public @method mapDataToColumn
-	 * @description Map all incoming data to columns to make sure we have a full dataset, or send partial flag true to map only partial dataset
+	 * @description Map all incoming data or array of data, to columns to make sure we have a full dataset, or send partial flag true to map only partial dataset
      * @param {Object} data The data to check against the columns
      * @param {Boolean} partial The flag to force a partial map on only data available in dataset
      * @return {Promise} a resulting promise of data or error on failure
      */
 	mapDataToColumn(data, partial) {
-		if (!this.columns) throw new Error('Cannot map data without setting columns getter in model');
+		if (!this.columns) throw new Error('Cannot map data without setting columns getter in model [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']');
 
+		// array of data entries?
+		if (typeof data === 'object' && data.length !== undefined) {
+			let allClean = [];
+			for (let i = 0; i < data.length; i++) allClean.push(this.mapDataToColumn(data[i], partial));
+			return allClean;
+		}
+
+		// single entry
 		let clean = {};
 		for (const key in this.columns) {
-			if (data[key] === undefined && this.columns[key].required && !partial) throw new RestError({message: 'Invalid data, required property [' + key + '] missing', data: this.columns}, 400);
-			if (data[key] !== undefined) {
-				if (!DataTools.checkType(data[key], this.columns[key].type)) throw new RestError({ message: 'Invalid data, property [' + key + '] type incorrect', data: this.columns }, 400);
-				clean[key] = data[key];
+			let dataKey = DataTools.snakeToCamel(key);
+			if ((!data || data[dataKey] === undefined) && this.columns[key].required && !partial) {
+				throw new RestError({
+					message: 'Invalid data, required property [' + dataKey + '] missing from [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']',
+					data: this.columns
+				}, 400);
+			}
+			
+			if (data[dataKey] !== undefined) {
+				if (!DataTools.checkType(data[dataKey], this.columns[key].type)) throw new RestError({ message: 'Invalid data, property [' + dataKey + '] type incorrect for [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', data: this.columns }, 400);
+				clean[key] = data[dataKey];
 			}
 		}
-		if (Object.keys(clean).length < 1) throw new RestError({ message: 'Invalid data, must have at least one property', data: this.columns }, 400);
+
+		// empty
+		if (Object.keys(clean).length < 1) throw new RestError({ message: 'Invalid data, must have at least one property in [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', data: this.columns }, 400);
 		
 		return clean;
 	}

@@ -28,7 +28,7 @@ class Organisation extends Model {
      */
 	get columns() {
 		return {
-			active: { type: 'boolean', required: true, description: 'Organisation is active' },
+			active: { type: 'boolean', required: false, description: 'Organisation is active' },
 			name: { type: 'string', required: true, description: 'Friendly organisation name' },
 			name_unique: { type: 'string', required: true, description: 'Unique organisation name' },
 			description: { type: 'string', required: true, description: 'Basic short description of organisation' }

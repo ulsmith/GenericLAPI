@@ -28,7 +28,7 @@ class User extends Model {
      */
 	get columns() {
 		return {
-			active: { type: 'boolean', required: true, description: 'User is active' },
+			active: { type: 'boolean', required: false, description: 'User is active' },
 			name: { type: 'string', required: true, description: 'Full user name' }
 		};
 	}

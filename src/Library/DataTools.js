@@ -18,8 +18,7 @@ class DataTools {
 	 * @return {Boolean} True if data is of correct type
 	 */
 	static checkType(data, type) {
-		console.log(type, typeof data === type);
-		switch (type.toLowerCase()) {
+		switch (type.split('[')[0].toLowerCase()) {
 			case 'boolean':
 			case 'object':
 			case 'number':
@@ -32,6 +31,7 @@ class DataTools {
 			case 'uuid': return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data);
 			case 'date': return;
 			case 'datetime': return typeof data === 'string' && !isNaN(Date.parse(data));
+			case 'enum': return typeof data === 'string' && type.indexOf('[' + data + ']') >= 0;
 			case 'json':
 				try { return typeof data === 'string' && JSON.parse(data) }
 				catch { return false }
@@ -43,6 +43,22 @@ class DataTools {
 			default: return true;
 		}
 	}
+
+	/**
+	 * @public @static @name snakeToCamel
+	 * @description Turn a snake case string using underscores to camel case
+	 * @param {String} s The string for camelification
+	 * @return {String} The camelified string
+	 */
+	static snakeToCamel(s) { return s.replace(/\_\w/g, (m) => m[1].toUpperCase()) }
+
+	/**
+	 * @public @static @name camelToSnake
+	 * @description Turn a camel case string to snake case using underscores
+	 * @param {String} s The string for camelification
+	 * @return {String} The camelified string
+	 */
+	static camelToSnake(s) { return s.replace(/[A-Z]/g, (m) => '_' + m[0].toLowerCase()) }
 }
 
 module.exports = DataTools;

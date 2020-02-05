@@ -1,11 +1,12 @@
 'use strict';
 
-const Controller = require('../System/Controller.js');
-const RestError = require('../System/RestError.js');
-const UserModel = require('../Model/Identity/User.js');
+const Controller = require('../../System/Controller.js');
+const RestError = require('../../System/RestError.js');
+const UserModel = require('../../Model/Identity/User.js');
+const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
 
 /**
- * @namespace API/Controller
+ * @namespace API/Controller/Identity
  * @class User
  * @extends Controller
  * @description Controller class exposing methods over the routed endpoint
@@ -32,10 +33,10 @@ class User extends Controller {
      */
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.crud.user', 'read');
+		this.$services.auth.hasPermission('api.identity.user', 'read');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.user.other', 'read');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.identity.user.other', 'read');
 
 		let user = new UserModel();
 
@@ -62,12 +63,54 @@ class User extends Controller {
 		if (event.pathParameters.uuid) throw new RestError('Method not allowed with UUID route parameter', 405);
 
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.crud.user.other', 'write');
+		this.$services.auth.hasPermission('api.identity.user.other', 'write');
 
-		// let user = new UserModel();
-		// let mapped = user.mapDataToColumn(event.parsedBody);
+		let user = new UserModel();
+		let uMapped = user.mapDataToColumn(event.parsedBody);
+		let userIdentity = new UserIdentityModel();
+		let uiMapped = userIdentity.mapDataToColumn(event.parsedBody.userIdentity);
+		// console.log(72, uiMapped); // single... { identity: 'fsdf@fsdfsd.fsdom', type: 'email', primary: false }
+		// console.log(73, uiMapped); // many... [ { identity: 'fsdf@fsdfsd.fsdom', type: 'email', primary: false }, {identity: '333fsdf@fsdfsd.fsdom', type: 'email', primary: true} ]
+
+/*
+		{
+			name: 'fsdfsfd'
+			userIdentity: [
+				{
+					identity: 'fdsfsd',
+					type: 'email',
+					primary: false
+				}
+			]
+		}
+*/
+
+		return user.insert(uMapped, '*')
+
+		// need to merge in user id's
+			.then((usrs) => userIdentity.insert(uiMapped, '*').then((ui) => {
+				{
+					uuid: usrs[0].uuid,
+					name: usrs[0].name,
+					active: usrs[0].active,
+					userIdentity: ui
+				}
 
 
+				usrs[0].userIdentity = ui;
+				return usrs[0];
+			}))
+			.then((usr) => ({
+				uuid: usr.uuid,
+				name: usr.name,
+				active: usr.active
+			}))
+			.catch((error) => {
+				throw new RestError({ message: 'Invalid data, could not add record', ...user.parseError(error) }, 400);
+			});
+
+
+// update user.name
 
 		// // knex.transaction(function (trx) {
 		// // 	knex('books').transacting(trx).insert({ name: 'Old Books' })
@@ -102,10 +145,10 @@ class User extends Controller {
      */
 	put(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.crud.user', 'write');
+		this.$services.auth.hasPermission('api.identity.user', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.user.other', 'write');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.identity.user.other', 'write');
 
 		// let user = new UserModel();
 		// let mapped = user.mapDataToColumn(event.parsedBody);
@@ -132,10 +175,10 @@ class User extends Controller {
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.crud.user', 'write');
+		this.$services.auth.hasPermission('api.identity.user', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.user.other', 'write');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.identity.user.other', 'write');
 
 		// // check partial dataset
 		// let user = new UserModel();
@@ -163,10 +206,10 @@ class User extends Controller {
      */
 	delete(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.crud.user', 'delete');
+		this.$services.auth.hasPermission('api.identity.user', 'delete');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.crud.user.other', 'delete');
+		if (event.pathParameters.uuid !== this.$services.auth.organisation.uuid) this.$services.auth.hasPermission('api.identity.user.other', 'delete');
 
 		// // check partial dataset
 		// let user = new UserModel();

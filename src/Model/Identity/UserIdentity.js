@@ -29,8 +29,8 @@ class UserIdentity extends Model {
 	get columns() {
 		return {
 			identity: { type: 'string', required: true, description: 'User identity' },
-			type: { type: 'string', required: false, description: 'User identity type' },
-			primary: { type: 'timestamp', required: false, description: 'User identity primary type' }
+			type: { type: 'enum[email][phone]', required: true, description: 'User identity type' },
+			primary: { type: 'boolean', required: false, description: 'User identity primary type' }
 		};
 	}
 }
