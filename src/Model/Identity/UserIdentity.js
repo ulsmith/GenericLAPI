@@ -23,7 +23,7 @@ class UserIdentity extends Model {
 
     /**
 	 * @public @get @method columns
-	 * @description return columns for this model that we give access to
+	 * @description Columns that we allow to be changed through requests to API
      * @return {Object} The columns data that are accessable
      */
 	get columns() {

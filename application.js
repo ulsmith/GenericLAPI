@@ -1,5 +1,7 @@
 'use strict';
 
+var RestError = require('./src/System/RestError.js');
+
 var KnexService = require('./src/Service/Knex.js');
 var AuthService = require('./src/Service/Auth.js');
 
@@ -50,7 +52,7 @@ exports.handler = (event, context, callback) => {
     try {
 		controller[name] = require('./src/Controller/' + path);
 		event.controller = { path: './src/Controller/' + path, name: name, access: controller[name][event.httpMethod.toLowerCase()]};
-		if (event.pathParameters.error) callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
+		if (event.pathParameters.error) return callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
 	} catch (error) {
 		if (process.env.Mode === 'development') console.log(error);
         return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.resource + ']') });
@@ -58,10 +60,6 @@ exports.handler = (event, context, callback) => {
 
 	// lets parse over any body
 	event.parsedBody = !!event.body && event.headers['Content-Type'] === 'application/json' ? event.parsedBody = JSON.parse(event.body) : {};
-
-	// strip out params to array
-	// event.params = [];
-	// if (!!event.pathParameters) event.params = event.pathParameters.params.split('/');
 
 	// we are pretty much ready now, so lets set up some singleton services that can hold state accross the system
 	process.__client = {
@@ -86,9 +84,9 @@ exports.handler = (event, context, callback) => {
 		if (
 			error.name.toLowerCase() === 'typeerror' 
 			&& error.message.toLowerCase().indexOf('is not a function') > 0 
-			&& error.message.toLowerCase().indexOf('event.httpMethod.toLowerCase') > 0
-		) callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
-		throw error;
+			&& error.message.toLowerCase().indexOf('event.httpmethod.tolowercase') > 0
+		) throw new RestError('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']', 405);
+		else throw error;
 	})
 	.then((payload) => {
         // build up response
@@ -97,7 +95,8 @@ exports.handler = (event, context, callback) => {
 		response.body = !!payload.body ? payload.body : JSON.stringify(payload);
 
 		return response;
-	}).catch((error) => {
+	})
+	.catch((error) => {
 		// catch any other errors
 		if (error.name !== 'RestError') console.log(error);
 

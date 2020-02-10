@@ -2,33 +2,33 @@
 
 /**
  * @namespace API/System
- * @class RestError
+ * @class SystemError
  * @extends Error
  * @description System class to give extended error functionality as a rest error, for returning back to client
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class RestError extends Error {
+class SystemError extends Error {
 
 	/**
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 * @param {String} message The message to pass in as the error message
-	 * @param {Number} code The rest error code to output, along with the message
+	 * @param {Mixed} details Any data to capture
 	 */
-	constructor(message, code) {
+	constructor(message, details) {
 		// Pass remaining arguments (including vendor specific ones) to parent constructor
 		super();
 
 		// Maintains proper stack trace for where our error was thrown (only available on V8)
-		if (Error.captureStackTrace) Error.captureStackTrace(this, RestError);
+		if (Error.captureStackTrace) Error.captureStackTrace(this, SystemError);
 
-		this.name = 'RestError';
+		this.name = 'SystemError';
 		this.exception = true;
-		this.message = typeof message === 'string' ? {message: message} : message;
-		this.statusCode = code;
+		this.message = message;
+		this.details = details || {};
 	}
 }
 
-module.exports = RestError;
+module.exports = SystemError;

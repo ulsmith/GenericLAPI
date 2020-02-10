@@ -23,16 +23,12 @@ class UserAccount extends Model {
 
     /**
 	 * @public @get @method columns
-	 * @description return columns for this model that we give access to
+	 * @description Columns that we allow to be changed through requests to API
      * @return {Object} The columns data that are accessable
      */
 	get columns() {
 		return {
-			password: { type: 'string', required: true, description: 'User password' },
-			ip_address: { type: 'cidr', required: false, description: 'Friendly organisation name' },
-			user_agent: { type: 'string', required: false, description: 'Unique organisation name' },
-			login_current: { type: 'timestamp', required: false, description: 'Basic short description of organisation' },
-			login_previous: { type: 'timestamp', required: false, description: 'Basic short description of organisation' }
+			password: { type: 'string', required: true, description: 'User password' }
 		};
 	}
 }

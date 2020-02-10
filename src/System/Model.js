@@ -1,7 +1,7 @@
 'use strict';
 
 const Core = require('./Core.js');
-const RestError = require('./RestError.js');
+const SystemError = require('./SystemError.js');
 const DataTools = require('../Library/DataTools.js');
 
 /**
@@ -59,26 +59,54 @@ class Model extends Core {
 	find(where) { return this.model.where(where) }
 
     /**
+     * @public @method transaction
+	 * @description Proxy out the transaction method from knex to class
+     * @param {Method} func The function to pass on
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	transaction(func) { return this.db.transaction(func) }
+	
+    /**
      * @public @method insert
-	 * @description Insert a single resource in a single table, clear any default data (id, created, updated)
+	 * @description Insert single/many resource/s in a single table, clear any default data (id, created, updated)
      * @param {Object} data The object data to insert into the resource as {key: value}
-     * @param {String} data The object data to insert into the resource as {key: value}
+	 * @param {Mixed} returning The array of returned columns or a string
      * @return {Promise} a resulting promise of data or error on failure
      */
-	insert(data, returning) { 
-		return this.model.insert(this.__cleanIncommingData(data)).returning(returning || 'id');
-	}
+	insert(data, returning) { return this.model.insert(this.__cleanIncommingData(data)).returning(returning || 'id') }
 
     /**
-     * @public @method update
+     * @public @method transactInsert
+	 * @description Transaction Insert single/many resource/s in a single table, clear any default data (id, created, updated)
+     * @param {Object} trx The transaction to bind to
+     * @param {Object} data The object data to insert into the resource as {key: value}
+	 * @param {Mixed} returning The array of returned columns or a string
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	transactInsert(trx, data, returning) { return this.db.transacting(trx).table(this.table).insert(this.__cleanIncommingData(data)).returning(returning || 'id') }
+	
+    /**
+	 * @public @method update
 	 * @description Update a single resource in a single table by table id, clear any default data (id, created, updated)
-     * @param {Number} id The resource id to update
-     * @param {Object} data The object data to update on the resource as {key: value}
-     * @return {Promise} a resulting promise of data or error on failure
+	 * @param {Mixed} where The resource id to update or an object of where data
+	 * @param {Object} data The object data to update on the resource as {key: value}
+	 * @param {Mixed} returning The array of returned columns or a string
+	 * @return {Promise} a resulting promise of data or error on failure
      */
-	update(id, data) { return this.model.where({ id: id }).update(this.__cleanIncommingData(data)) }
+	update(where, data, returning) { return this.model.where(typeof where === 'object' ? where : { id: where }).update(this.__cleanIncommingData(data)).returning(returning || 'id') }
+	
+	/**
+	 * @public @method transactUpdate
+	 * @description Transaction Insert single/many resource/s in a single table, clear any default data (id, created, updated)
+	 * @param {Object} trx The transaction to bind to
+	 * @param {Mixed} where The resource id to update or an object of where data
+	 * @param {Object} data The object data to insert into the resource as {key: value}
+	 * @param {Mixed} returning The array of returned columns or a string
+	 * @return {Promise} a resulting promise of data or error on failure
+	 */
+	transactUpdate(trx, where, data, returning) { return this.db.transacting(trx).table(this.table).where(typeof where === 'object' ? where : { id: where }).update(this.__cleanIncommingData(data)).returning(returning || 'id') }
 
-    /**
+	/**
      * @public @method delete
 	 * @description Delete a single resource in a single table by table id
      * @param {Number} id The resource id to delete
@@ -95,7 +123,7 @@ class Model extends Core {
 	softDelete(id) { 
 		return this.model.where({ id: id })
 			.then((data) => {
-				if (!data[0]) throw new RestError('Cannot soft delete record, record does not exist in original table', 400);
+				if (!data[0]) throw new SystemError('Cannot soft delete record, record does not exist in original table');
 				return data[0];
 			})
 			.then((data) => this.db.table('deleted.' + this.table.replace('.', '___')).insert(data))
@@ -111,7 +139,7 @@ class Model extends Core {
 	softRestore(id) {
 		return this.db.table('deleted.' + this.table.replace('.', '___')).where({ id: id })
 			.then((data) => {
-				if (!data[0]) throw new RestError('Cannot soft restore record, record does not exist deleted table', 400);
+				if (!data[0]) throw new SystemError('Cannot soft restore record, record does not exist deleted table');
 				return data[0];
 			})
 			.then((data) => this.model.insert(data))
@@ -120,42 +148,48 @@ class Model extends Core {
 
     /**
      * @public @method mapDataToColumn
-	 * @description Map all incoming data or array of data, to columns to make sure we have a full dataset, or send partial flag true to map only partial dataset
+	 * @description Map all incoming data, to columns to make sure we have a full dataset, or send partial flag true to map only partial dataset
      * @param {Object} data The data to check against the columns
      * @param {Boolean} partial The flag to force a partial map on only data available in dataset
-     * @return {Promise} a resulting promise of data or error on failure
+     * @return {Object} a resulting promise of data or error on failure
      */
 	mapDataToColumn(data, partial) {
 		if (!this.columns) throw new Error('Cannot map data without setting columns getter in model [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']');
-
-		// array of data entries?
-		if (typeof data === 'object' && data.length !== undefined) {
-			let allClean = [];
-			for (let i = 0; i < data.length; i++) allClean.push(this.mapDataToColumn(data[i], partial));
-			return allClean;
-		}
+		if (partial && !data) return;
 
 		// single entry
 		let clean = {};
 		for (const key in this.columns) {
 			let dataKey = DataTools.snakeToCamel(key);
-			if ((!data || data[dataKey] === undefined) && this.columns[key].required && !partial) {
-				throw new RestError({
-					message: 'Invalid data, required property [' + dataKey + '] missing from [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']',
-					data: this.columns
-				}, 400);
-			}
-			
+			if ((!data || data[dataKey] === undefined) && this.columns[key].required && !partial) throw new SystemError('Invalid data, required property [' + dataKey + '] missing from [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
+						
 			if (data[dataKey] !== undefined) {
-				if (!DataTools.checkType(data[dataKey], this.columns[key].type)) throw new RestError({ message: 'Invalid data, property [' + dataKey + '] type incorrect for [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', data: this.columns }, 400);
+				if (!DataTools.checkType(data[dataKey], this.columns[key].type)) throw new SystemError('Invalid data, property [' + dataKey + '] type incorrect for [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
 				clean[key] = data[dataKey];
 			}
 		}
 
 		// empty
-		if (Object.keys(clean).length < 1) throw new RestError({ message: 'Invalid data, must have at least one property in [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', data: this.columns }, 400);
+		if (Object.keys(clean).length < 1) throw new SystemError('Invalid data, must have at least one property in [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
 		
 		return clean;
+	}
+
+    /**
+     * @public @method mapDataArrayToColumn
+	 * @description Map all incoming data array of data, to columns to make sure we have a full dataset, or send partial flag true to map only partial dataset
+     * @param {Array} data The data to check against the columns
+     * @param {Boolean} partial The flag to force a partial map on only data available in dataset
+     * @return {Array} a resulting promise of data or error on failure
+     */
+	mapDataArrayToColumn(data, partial) {
+		if (partial && !data) return;
+		if (!data || !data.length) throw new SystemError('Data must be an array of data objects for [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']');
+
+		// array of data entries?
+		let allClean = [];
+		for (let i = 0; i < data.length; i++) allClean.push(this.mapDataToColumn(data[i], partial));
+		return allClean;
 	}
 
     /**
@@ -166,12 +200,12 @@ class Model extends Core {
      */
 	parseError(error) {
 		if (!error) return { expected: this.columns };
-		if (error.code == '22P02' && error.routine == 'string_to_uuid') return { error: 'invalid data', property: 'uuid', expected: this.columns };
-		if (error.code == '23505') return { error: 'not unique', property: error.detail.split(')=(')[0].split('(')[1], expected: this.columns };
+		if (error.code == '22P02' && error.routine == 'string_to_uuid') return { error: 'invalid data', detail: 'uuid' };
+		if (error.code == '23505') return { error: 'not unique', detail: error.detail.split(')=(')[0].split('(')[1] };
 
 		// NOTE: remove me
 		// console.log(error.code, error.message, error.detail);
-		return { error: 'unknown', expected: this.columns };
+		return { error: 'unknown' };
 	}
 
     /**
@@ -189,10 +223,16 @@ class Model extends Core {
     /**
      * @private @method __cleanIncommingData
 	 * @description Clean any incomming data free of default values set by the DB directly
-     * @param {Object} data The resource id to delete
-     * @return {Object} The cleaned data object
+     * @param {Mixed} data The resource data to clean or array of data
+     * @return {Mixed} The cleaned data object or array of objects
      */
 	__cleanIncommingData(data) {
+		if (data.length > 0) {
+			let dataArray = [];
+			for (let i = 0; i < data.length; i++) dataArray.push(this.__cleanIncommingData(data[i]));
+			return dataArray;
+		}
+
 		let cleaned = Object.assign({}, data);
 		
 		if (cleaned.id) delete cleaned.id;

@@ -1,6 +1,10 @@
 'use strict';
 
 const Model = require('../../System/Model.js');
+const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
+const UserAccountModel = require('../../Model/Identity/UserAccount.js');
+const SystemError = require('../../System/SystemError.js');
+const Crypto = require('../../Library/Crypto.js');
 
 /**
  * @namespace API/Model/Identity
@@ -23,7 +27,7 @@ class User extends Model {
 
     /**
 	 * @public @get @method columns
-	 * @description return columns for this model that we give access to
+	 * @description Columns that we allow to be changed through requests to API
      * @return {Object} The columns data that are accessable
      */
 	get columns() {
@@ -51,30 +55,36 @@ class User extends Model {
 		return this.db
 			.select(
 				'user.*', 
-				'user_identity.identity AS identity_identity',
-				'user_identity.type AS identity_type',
-				'user_identity.primary AS identity_primary'
+				'user_identity.id AS user_identity_id',
+				'user_identity.identity AS user_identity_identity',
+				'user_identity.type AS user_identity_type',
+				'user_identity.primary AS user_identity_primary',
+				'organisation.uuid AS organisation_uuid'
 			)
 			.from('identity.user')
-			.join('identity.user_account', 'user.id', 'user_account.user_id')
-			.join('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.leftJoin('identity.user_account', 'user.id', 'user_account.user_id')
+			.leftJoin('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.leftJoin('identity.user_department', 'user.id', 'user_department.user_id')
+			.leftJoin('identity.organisation', 'user_department.department_organisation_id', 'organisation.id')
 			.where({ 'user.uuid': uuid })
 			.then((data) => {
 				if (data.length < 1) return {};
 				
-				let inflate = {identities: []};
+				let inflate = {user_identity: [], organisation: []};
+				let idents = [];
 				for (let i = 0; i < data.length; i++) {
+					inflate.id = data[i].id;
+					inflate.uuid = data[i].uuid;
 					inflate.name = data[i].name;
 					inflate.active = data[i].active;
-					inflate.identities.push({
-						identity: data[i].identity_identity,
-						type: data[i].identity_type,
-						primary: data[i].identity_primary
-					});
+					if (data[i].user_identity_id && idents.indexOf(data[i].user_identity_id) < 0) inflate.user_identity.push({id: data[i].user_identity_id, identity: data[i].user_identity_identity, type: data[i].user_identity_type, primary: data[i].user_identity_primary});
+					if (data[i].organisation_uuid && inflate.organisation.indexOf(data[i].organisation_uuid) < 0) inflate.organisation.push(data[i].organisation_uuid);
+					idents.push(data[i].user_identity_id);
 				}
+				
 				return inflate;
 			})
-			.catch((error) => { console.log(error); return {} }) ;
+			.catch((error) => { return {} }) ;
 	}
 
     /**
@@ -373,6 +383,136 @@ class User extends Model {
 			.where('role.name_unique', match)
 			.groupBy('role.name_unique')
 			.limit(1);
+	}
+
+    /**
+     * @public @method add
+     * @description Add a user and all meta tables. Must include identity and account data
+     * @param {String} data The data to combine into a new user
+     * @return Promise a resulting promise with an error to feed back or data to send on
+	 */
+	add(data) {
+		let userIdentity = new UserIdentityModel();
+		let userAccount = new UserAccountModel();
+		let uMapped, uiMapped, uaMapped;
+		
+		return Promise.resolve().then(() => {
+			// map data, checking integrity
+			uMapped = this.mapDataToColumn(data);
+			uiMapped = userIdentity.mapDataArrayToColumn(data.userIdentity);
+			uaMapped = userAccount.mapDataToColumn(data.userAccount);
+			uaMapped.password = Crypto.passwordHash(uaMapped.password);
+		}).catch((error) => {
+			// manage error, parse and re-throw
+			if (error.name === 'SystemError') throw new SystemError(error.message, {user: {...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns}});
+			throw error;
+		}).then(() => {
+			// perform add new user, identities and account data, rollback on failure
+			return this.transaction((trx) => {
+				return this.transactInsert(trx, uMapped, '*')
+					.then((usrs) => {
+						// insert to identities if any
+						if (uiMapped) {
+							uiMapped.map((d) => d.user_id = usrs[0].id);
+							return userIdentity.transactInsert(trx, uiMapped, ['id', 'identity', 'type', 'primary'])
+								.then((ui) => ({ ...usrs[0], ...{ userIdentity: ui } }))
+								.catch((error) => {
+									throw new SystemError('Invalid data, could not add record', {...userIdentity.parseError(error), userIdentity: userIdentity.columns });
+								});
+						}
+
+						return usrs[0];
+					})
+					.then((usr) => {
+						// insert to identities if any
+						if (uaMapped) {
+							uaMapped.user_id = usr.id;
+							return userAccount.transactInsert(trx, uaMapped)
+								.then(() => usr)
+								.catch((error) => {
+									throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
+								});
+						}
+
+						return usr;
+					})
+					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
+					.then(trx.commit)
+					.catch(trx.rollback);
+			})
+		});
+	}
+
+    /**
+     * @public @method edit
+     * @description Edit a user and all meta tables. Must include identity and account data
+     * @param {String} data The data to combine into a new user
+     * @param {Boolean} partial Perform a partial update of data (patch)
+     * @return Promise a resulting promise with an error to feed back or data to send on
+	 */
+	edit(id, data, partial) {
+		let userIdentity = new UserIdentityModel();
+		let userAccount = new UserAccountModel();
+		let uMapped, uiMapped, uaMapped;
+
+		return Promise.resolve().then(() => {
+			// map data, checking integrity
+			uMapped = this.mapDataToColumn(data, partial);
+			uiMapped = userIdentity.mapDataArrayToColumn(data.userIdentity, partial);
+			uaMapped = userAccount.mapDataToColumn(data.userAccount, partial);
+		}).catch((error) => {
+			// manage error, parse and re-throw
+			if (error.name === 'SystemError') throw new SystemError(error.message, { user: { ...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns } });
+			throw error;
+		}).then(() => {
+			// perform edit user, identities and account data, rollback on failure
+			return this.transaction((trx) => {
+				return this.transactUpdate(trx, id, uMapped, '*')
+					.then((usrs) => {
+						// update identities attached to this user
+						if (uiMapped && uiMapped.length > 0) {
+							let identities = [];
+							for (let i = 0; i < data.userIdentity.length; i++) {
+								identities.push(
+									userIdentity.transactUpdate(trx, { id: data.userIdentity[i].id, user_id: id}, uiMapped[i], ['id', 'identity', 'type', 'primary'])
+								);
+							}
+
+							// splice id into error response, dont want it in normally but we are updating from user resource for convenience!
+							return Promise.all(identities).then((uis) => ({ ...usrs[0], ...{ userIdentity: uis.map((ui) => ui[0]) } }))
+								.catch((error) => {
+									throw new SystemError('Invalid data, could not update record', {
+										...userIdentity.parseError(error), userIdentity: {
+											...userIdentity.columns, "id": {
+												"type": "serial",
+												"required": true,
+												"description": "User identity ID"
+											}
+										}
+									});
+								});
+						}
+
+						return usrs[0];
+					})
+					.then((usr) => {
+						// insert to account, only need to use user id here as 1 to 1 table. dont return anything
+						if (uaMapped) {
+							uaMapped.password = Crypto.passwordHash(uaMapped.password, partial);
+							return userAccount.transactUpdate(trx, { user_id: id }, uaMapped)
+								.then(() => usr)
+								.catch((error) => {
+									throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
+								});
+						}
+
+						return usr;
+					})
+					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
+					.then(trx.commit)
+					.catch(trx.rollback);
+			});
+		});
 	}
 }
 
