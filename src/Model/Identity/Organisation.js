@@ -41,7 +41,7 @@ class Organisation extends Model {
      * @param {String} uuid The resource uuid to get
      * @return {Promise} a resulting promise of data or error on failure
      */
-	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0] || {}).catch(() => { return {}}) }
+	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0]) }
 }
 
 module.exports = Organisation;

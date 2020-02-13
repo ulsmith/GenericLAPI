@@ -43,7 +43,7 @@ class User extends Model {
      * @param {String} uuid The resource uuid to get
      * @return {Promise} a resulting promise of data or error on failure
      */
-	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0] || {}).catch(() => { return {} }) }
+	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0]) }
 
 	/**
 	 * @public @method getWithMetaFromUUID
@@ -68,7 +68,7 @@ class User extends Model {
 			.leftJoin('identity.organisation', 'user_department.department_organisation_id', 'organisation.id')
 			.where({ 'user.uuid': uuid })
 			.then((data) => {
-				if (data.length < 1) return {};
+				if (data.length < 1) return;
 				
 				let inflate = {user_identity: [], organisation: []};
 				let idents = [];
@@ -83,8 +83,7 @@ class User extends Model {
 				}
 				
 				return inflate;
-			})
-			.catch((error) => { return {} }) ;
+			});
 	}
 
     /**

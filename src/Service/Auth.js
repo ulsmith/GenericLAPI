@@ -28,6 +28,7 @@ class Auth extends Service {
 		this.user;
 		this.organisation;
 		this.permissions;
+		this.cache;
 	}
 
     /**
@@ -154,6 +155,7 @@ class Auth extends Service {
 				this.user = userOrgPerms.user;
 				this.organisation = userOrgPerms.org;
 				this.permissions = userOrgPerms.perms;
+				this.cache = {};
 				
 				// return basic user details when hit directly
 				return { 
@@ -241,18 +243,50 @@ class Auth extends Service {
 	}
 
     /**
-     * @public @method hasPermission
-	 * @description Fetch permission to check, throws rest error on failure.
-     * @param {String} role The role to check
-     * @param {String} type The access type to check
+     * @public @method isPermitted
+	 * @description Handle a permission denied situation
+     * @param {String} role The specific role to check as 'api.aaa.bbb' or any of a combination of roles allowed 'api.aaa/aaaa.bbb/bbbb'
+     * @param {String} type The access type to check such as 'read' or more than one 'read,write,delete'
      */
-	hasPermission(role, type) { 
-		if (!this.getPermission(role)[type]) {
-			console.log(`[UserUUID: ${this.user.uuid}, OrgUUID: ${this.organisation.uuid}] No '${type}' access to '${role}' role`);
-			throw new RestError(`Permission denied, you do not have '${type}' access to this resource`, 403);
+	isPermitted(role, type) {
+		// convert to regex, get roles and split types
+		let regex = '^' + role.split('.').map((r) => r.indexOf('/') > 0 ? '(' + r.replace(/\//g, '|') + ')' : r).join('\\.') + '$';
+		let roles = this.filterPermissions(new RegExp(regex));
+		let types = type.split(',');
+
+		// no roles found
+		if (roles.length === 0) this.permissionDenied(role, type);
+		
+		// one role found
+		if (roles.length === 1) {
+			if (
+				(types.length === 1 && !roles[0][types[0].trim()])
+				|| (types.length === 2 && (!roles[0][types[0].trim()] || !roles[0][types[1].trim()]))
+				|| (types.length === 3 && (!roles[0][types[0].trim()] || !roles[0][types[1].trim()] || !roles[0][types[2].trim()]))
+			) this.permissionDenied(role, types[0]);
+		}
+
+		// more than one role found
+		if (roles.length > 1) {
+			let reduced = roles.reduce((acc, cur) => ({read: acc.read || cur.read, write: acc.write || cur.write, delete: acc.delete || cur.delete}));
+			if (
+				(types.length === 1 && !reduced[types[0].trim()])
+				|| (types.length === 2 && (!reduced[types[0].trim()] || !reduced[types[1].trim()]))
+				|| (types.length === 3 && (!reduced[types[0].trim()] || !reduced[types[1].trim()] || !reduced[types[2].trim()]))
+			) this.permissionDenied(role, types[0]);
 		}
 	}
 
+    /**
+     * @public @method permissionDenied
+	 * @description Handle a permission denied situation
+     * @param {String} role The role to check
+     * @param {String} type The access type to check
+     */
+	permissionDenied(role, type) {
+		console.log(`[UserUUID: ${this.user.uuid}, OrgUUID: ${this.organisation.uuid}] No '${type}' access to '${role}' role`);
+		throw new RestError(`Permission denied, you do not have '${type}' access to this resource`, 403);
+	}
 
     /**
      * @public @method getPermission
@@ -269,6 +303,14 @@ class Auth extends Service {
      * @return {Array} Do you have permissions, array of permission objects
      */
 	getPermissions(prefix) { return this.$services.auth.permissions.filter((perm) => perm.role.indexOf(prefix) === 0) || [] }
+
+    /**
+     * @public @method filterPermissions
+	 * @description Fetch permissions to check
+     * @param {Regex} regex The regex to filter on
+     * @return {Array} Do you have permissions, array of permission objects
+     */
+	filterPermissions(regex) { return this.$services.auth.permissions.filter((perm) => regex.test(perm.role)) || [] }
 }
 
 module.exports = Auth;

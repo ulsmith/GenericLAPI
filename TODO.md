@@ -7,15 +7,15 @@
 * [DONE] return all UI permissions on authentication (get/post)
 * [DONE] allow login without any organisation
 * [DONE] if organisation present, has to be active to log in
-* Need to switch to method not allowed if route is reachable but not for that method, with a 405, push to application handler directly
-* Fix the patch to orgs, should throw not found if the org not found.
+* [DONE] Need to switch to method not allowed if route is reachable but not for that method, with a 405, push to application handler directly
+* [DONE] Fix the patch to orgs, should throw not found if the org not found.
 * look into oauth integration
 
 ## endpoints
 
-* RWD organisation
+* [DONE] RWD organisation
+* [DONE] RWD user
 * RWD department
-* RWD user
 * RWD group
 * RWD role
 

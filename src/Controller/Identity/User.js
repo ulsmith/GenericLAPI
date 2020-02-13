@@ -32,17 +32,21 @@ class User extends Controller {
      */
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.identity.user', 'read');
+		this.$services.auth.isPermitted('api.identity.user', 'read');
 
 		let user = new UserModel();
 
 		return user.getDetailsFromUUID(event.pathParameters.uuid)
 			.then((usr) => {
+				if (!usr || !usr.id) throw new RestError('Could not find resource for UUID provided', 404);
+				return usr;
+			})
+			.then((usr) => {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.hasPermission('api.identity.user.related', 'read');
-				else this.$services.auth.hasPermission('api.identity.user.all', 'read');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read');
+				else this.$services.auth.isPermitted('api.identity.user.system', 'read');
 				
 				return usr;
 			})	
@@ -53,7 +57,7 @@ class User extends Controller {
 				userIdentity: usr.user_identity,
 			})).catch((error) => {
 				if (error.name === 'RestError') throw error;
-				throw new RestError('Could not find resource for UUID provided', 400);
+				throw new RestError('Could not find resource for UUID provided', 404);
 			});
 	}
 
@@ -69,7 +73,7 @@ class User extends Controller {
 		if (event.pathParameters.uuid) throw new RestError('Method not allowed with UUID route parameter', 405);
 
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.identity.user.all', 'write');
+		this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
 		
 		let user = new UserModel();
 		
@@ -89,22 +93,22 @@ class User extends Controller {
      */
 	put(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.identity.user', 'write');
+		this.$services.auth.isPermitted('api.identity.user', 'read,write');
 
 		let user = new UserModel();
 
 		// add a new user, with all meta tables, handle any system errors
 		return user.getDetailsFromUUID(event.pathParameters.uuid)
 			.then((usr) => {
-				if (!usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
+				if (!usr || !usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
 				return usr;
 			})
 			.then((usr) => {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.hasPermission('api.identity.user.related', 'read');
-				else this.$services.auth.hasPermission('api.identity.user.all', 'read');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
+				else this.$services.auth.isPermitted('api.identity.user.system', 'read,write');
 
 				return usr;
 			})				
@@ -124,26 +128,27 @@ class User extends Controller {
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.identity.user', 'write');
+		this.$services.auth.isPermitted('api.identity.user', 'read,write');
 
 		let user = new UserModel();
 
 		// add a new user, with all meta tables, handle any system errors
 		return user.getDetailsFromUUID(event.pathParameters.uuid)
 			.then((usr) => {
-				if (!usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
+				if (!usr || !usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
 				return usr;
 			})
 			.then((usr) => {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.hasPermission('api.identity.user.related', 'read');
-				else this.$services.auth.hasPermission('api.identity.user.all', 'read');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
+				else this.$services.auth.isPermitted('api.identity.user.system', 'read,write');
 
 				return usr;
 			})			
 			.then((usr) => user.edit(usr.id, event.parsedBody, true))
+			.then(() => 'Updated record')
 			.catch((error) => {
 				if (error.name === 'SystemError') throw new RestError(error, 400);
 				throw error;
@@ -159,30 +164,31 @@ class User extends Controller {
      */
 	delete(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.hasPermission('api.identity.user', 'delete');
+		this.$services.auth.isPermitted('api.identity.user', 'delete');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid !== this.$services.auth.user.uuid) this.$services.auth.hasPermission('api.identity.user.all', 'delete');
+		if (event.pathParameters.uuid === this.$services.auth.user.uuid) this.$services.auth.isPermitted('api.identity.user.organisation', 'delete');
+		else this.$services.auth.isPermitted('api.identity.user.system', 'delete');
 
 		// check partial dataset
 		let user = new UserModel();
 
 		return user.getFromUUID(event.pathParameters.uuid)
 			.then((usr) => {
-				if (!usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
+				if (!usr || !usr.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);
 				return usr;
 			})
 			.then((usr) => {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.hasPermission('api.identity.user.related', 'read');
-				else this.$services.auth.hasPermission('api.identity.user.all', 'read');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.related', 'read');
+				else this.$services.auth.isPermitted('api.identity.user.all', 'read');
 
 				return usr;
 			})	
 			.then((usr) => user.delete(usr.id))
-			.then(() => ({ 'message': 'Deleted record' }))
+			.then(() => 'Deleted record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
 				throw new RestError({ message: 'Invalid request, could not delete record', ...user.parseError(error) }, 400);
