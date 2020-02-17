@@ -58,13 +58,15 @@ class Authenticate extends Controller {
             user: {
                 uuid: this.$services.auth.user.uuid,
                 name: this.$services.auth.user.name,
-                login_current: this.$services.auth.user.login_current,
-                login_previous: this.$services.auth.user.login_previous
+                identity: this.$services.auth.user.identity,
+                identityType: this.$services.auth.user.identityType,
+                loginCurrent: this.$services.auth.user.login_current,
+                loginPrevious: this.$services.auth.user.login_previous
             },
             organisation: {
                 uuid: this.$services.auth.organisation.uuid,
                 name: this.$services.auth.organisation.name,
-                name_unique: this.$services.auth.organisation.name_unique,
+                nameUnique: this.$services.auth.organisation.name_unique,
                 description: this.$services.auth.organisation.description
             },
             permissions: this.$services.auth.permissions.filter((perm) => perm.role.indexOf('ui.') === 0)
