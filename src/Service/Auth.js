@@ -82,13 +82,19 @@ class Auth extends Service {
 					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent })
 					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org ? org.id : undefined))
 					.then((perms) => {
+						// splice in identity
+						userOrgs.user.identity = identity;
+						userOrgs.user.identityType = identityType;
+
 						let result = { 
 							token: this.generateJWT(userOrgs.user, org, userAgent),
 							user: {
 								uuid: userOrgs.user.uuid,
 								name: userOrgs.user.name,
-								login_current: date,
-								login_previous: userOrgs.user.login_current
+								identity: identity,
+								identityType: identityType,
+								loginCurrent: date,
+								loginPrevious: userOrgs.user.login_current
 							},
 							permissions: perms
 						};
@@ -97,7 +103,7 @@ class Auth extends Service {
 							result.organisation = {
 								uuid: org.uuid,
 								name: org.name,
-								name_unique: org.name_unique,
+								nameUnique: org.name_unique,
 								description: org.description
 							};
 						}
@@ -122,17 +128,19 @@ class Auth extends Service {
 		} catch(error) {
 			if (error.name === 'TokenExpiredError') {
 				throw new RestError({ 
+					status: 'expired',
 					message: 'Authorization expired, please refresh expired token.', 
 					method: 'POST', 
-					url: this.$environment.JWTIssuer + '/account/refresh',
+					url: 'account/refresh',
 					body: {token: jwt}
 				}, 401);
 			}
 			
 			throw new RestError({
+				status: 'expired',
 				message: 'Authorization failed, please log in to authorize.',
 				method: 'POST',
-				url: this.$environment.JWTIssuer + '/account/authenticate',
+				url: 'account/authenticate',
 				body: { identity: '', password: '' }
 			}, 401);
 		}
@@ -153,6 +161,8 @@ class Auth extends Service {
 				
 				// cache user for system use
 				this.user = userOrgPerms.user;
+				this.user.identity = payload.userIdentity,
+				this.user.identityType = payload.userIdentityType,
 				this.organisation = userOrgPerms.org;
 				this.permissions = userOrgPerms.perms;
 				this.cache = {};
@@ -162,13 +172,15 @@ class Auth extends Service {
 					user: {
 						uuid: this.user.uuid,
 						name: this.user.name,
-						login_current: this.user.login_current,
-						login_previous: this.user.login_previodus
+						identity: payload.userIdentity,
+						identityType: payload.userIdentityType,
+						loginCurrent: this.user.login_current,
+						loginPrevious: this.user.login_previous
 					},
 					organisation: {
 						uuid: this.organisation.uuid,
 						name: this.organisation.name,
-						name_unique: this.organisation.name_unique,
+						nameUnique: this.organisation.name_unique,
 						description: this.organisation.description
 					},
 					permissions: this.permissions.filter((perm) => perm.role.indexOf('ui.') === 0)
@@ -215,6 +227,8 @@ class Auth extends Service {
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
 			userUUID: user.uuid,
+			userIdentity: user.identity,
+			userIdentityType: user.identityType,
 			organisationUUID: organisation ? organisation.uuid : undefined,
 			userAgent: userAgent
 		}, process.env.JWTKey, { algorithm: 'HS256' });
