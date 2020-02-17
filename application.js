@@ -42,8 +42,8 @@ exports.handler = (event, context, callback) => {
     let path = '', name = ''; 
     for (let i = 1; i < resource.length; i++) {
         if (!!resource[i] && resource[i].charAt(0) === '{') continue;
-        name += resource[i].replace('_', '-').replace(/\b[a-z]/g, (char) => { return char.toUpperCase() });
-        path += resource[i].replace('_', '-').replace(/\b[a-z]/g, (char) => { return char.toUpperCase() }) + '/';
+		name += resource[i].replace(/\b[a-z]/g, (char) => { return char.toUpperCase() }).replace(/_|-|\s/g, '');
+		path += resource[i].replace(/\b[a-z]/g, (char) => { return char.toUpperCase() }).replace(/_|-|\s/g, '') + '/';
     }
 	path = path.substring(0, path.length -1) + '.js';
 	
