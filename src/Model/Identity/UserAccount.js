@@ -31,6 +31,20 @@ class UserAccount extends Model {
 			password: { type: 'string', required: true, description: 'User password' }
 		};
 	}
+
+	/**
+	 * @public @method getFromUUID
+	 * @description Get a single resource in a single table by table id
+     * @param {String} uuid The resource uuid to get
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	getFromUUID(uuid) { 
+		return this.db
+			.select('identity.user_account.*')
+			.from('identity.user_account')
+			.join('identity.user', 'user.id', 'user_account.user_id')
+			.where('user.uuid', uuid).limit(1).then((data) => data[0]);
+	}
 }
 
 module.exports = UserAccount;
