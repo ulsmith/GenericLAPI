@@ -253,7 +253,7 @@ class Crypto {
 	 * @public @static @name md5
 	 * @description Create a password hash using sha256
 	 * @param {String} text The string to hash
-	 * @param {String} hash The hash to use
+	 * @param {String} salt The salt to use
 	 * @return {String} A hash of the string with salt hash at front
 	 * @example To create a new hash... Crypto.passwordHash('paul smith')
 	 * @example To create a new hash with original salt for verifying... Crypto.passwordHash('paul smith', hash.substring(0, hash.length / 2))
