@@ -459,9 +459,30 @@ class User extends Model {
 			uMapped = this.mapDataToColumn(data, partial);
 			uiMapped = userIdentity.mapDataArrayToColumn(data.userIdentity, partial);
 			uaMapped = userAccount.mapDataToColumn(data.userAccount, partial);
-		}).catch((error) => {
+			uaMapped.password = Crypto.passwordHash(uaMapped.password);
+
+			// to edit password you must have current password too
+			if (!!data.password && !data.currentPassword) throw new SystemError('Must include current password when changing password');
+		})
+		.then(() => userIdentity.get(id).then((usridt) => {
+			if (usridt.password !== Crypto.passwordHash(uaMapped.currentPassword, usridt.password.substring(0, usridt.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
+		}))
+		.catch((error) => {
 			// manage error, parse and re-throw
-			if (error.name === 'SystemError') throw new SystemError(error.message, { user: { ...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns } });
+			if (error.name === 'SystemError') throw new SystemError(error.message, {
+				user: {
+					...this.columns, 
+					userIdentity: [userIdentity.columns], 
+					userAccount: {
+						...userAccount.columns, 
+						currentPassword: {
+							"type": "string",
+							"required": true,
+							"description": "Current user password"
+						}
+					} 
+				} 
+			});
 			throw error;
 		}).then(() => {
 			// perform edit user, identities and account data, rollback on failure
@@ -497,7 +518,6 @@ class User extends Model {
 					.then((usr) => {
 						// insert to account, only need to use user id here as 1 to 1 table. dont return anything
 						if (uaMapped) {
-							uaMapped.password = Crypto.passwordHash(uaMapped.password, partial);
 							return userAccount.transactUpdate(trx, { user_id: id }, uaMapped)
 								.then(() => usr)
 								.catch((error) => {
