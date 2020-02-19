@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 /**
  * @namespace API/Library
  * @class Crypto
@@ -281,6 +283,35 @@ class Crypto {
 		// put salt at front of hash //
 		return salt + outHash;
 	}
+
+	/**
+	 * @public @static @name encryptAES256CBC
+	 * @description Create a 256bit AES encrypted string
+	 * @param {String} text The string to hash
+	 * @return {String} An encrypted string
+	 * @example encrypt('Something');
+	 */
+	static encryptAES256CBC(string, password) {
+		var cipher = crypto.createCipher('aes-256-cbc', password)
+		var crypted = cipher.update(string, 'utf8', 'hex')
+		crypted += cipher.final('hex');
+		return crypted;
+	}
+
+	/**
+	 * @public @static @name decryptAES256CBC
+	 * @description Decrypt a 256bit AES encrypted string
+	 * @param {String} text The string to hash
+	 * @return {String} A decrypted string
+	 * @example let a = decrypt('...');
+	 */
+	static decryptAES256CBC(string, password) {
+		var decipher = crypto.createDecipher('aes-256-cbc', password)
+		var dec = decipher.update(string, 'hex', 'utf8')
+		dec += decipher.final('utf8');
+		return dec;
+	}
 }
 
 module.exports = Crypto;
+
