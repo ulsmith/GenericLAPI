@@ -164,7 +164,7 @@ CREATE TABLE identity.user_account (
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     password varchar(255)  NOT NULL,
-    password_reminder varchar(255)  NULL,
+    password_reminder text  NULL,
     password_reminder_sent timestamp  NULL,
     ip_address cidr  NULL,
     user_agent text  NULL,

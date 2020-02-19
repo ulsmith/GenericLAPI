@@ -310,7 +310,7 @@ VALUES (1, 1, 1);</AdditionalSQLAfterCreate>
                 </Column>
                 <Column Id="c19">
                     <Name>password_reminder</Name>
-                    <Type>varchar(255)</Type>
+                    <Type>text</Type>
                     <Description></Description>
                     <Nullable>true</Nullable>
                     <DefaultValue></DefaultValue>
