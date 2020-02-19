@@ -152,7 +152,11 @@ class User extends Model {
 				'user.active',
 				'user_account.password',
 				'user_account.login_current',
-				'user_account.login_previous'
+				'user_account.login_previous',
+				'user_account.ip_address',
+				'user_account.user_agent',
+				'user_account.password_reminder',
+				'user_account.password_reminder_sent',
 			)
 			.from('identity.user')
 			.join('identity.user_identity', 'user.id', 'user_identity.user_id')

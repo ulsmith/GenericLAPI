@@ -3,8 +3,10 @@
 const Service = require('../System/Service.js');
 const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
+const Comms = require('../Library/Comms.js');
 const UserModel = require('../Model/Identity/User.js');
 const UserAccountModel = require('../Model/Identity/UserAccount.js');
+const UserIdentityModel = require('../Model/Identity/UserIdentity.js');
 const JWT = require('jsonwebtoken');
 
 /**
@@ -39,7 +41,7 @@ class Auth extends Service {
      * @param {String} ip The resource to fetch with the given key
      * @return Promise a resulting promise with an error to feed back or data to send on
      */
-	login(identity, identityType, password, organisationUUID, userAgent) {
+	login(identity, identityType, password, organisationUUID, userAgent, ip) {
 		if (!identity || !password) throw new RestError('Login details incorrect, please try again.', 401);
 		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Login details incorrect, please try again.', 401);
 
@@ -79,7 +81,7 @@ class Auth extends Service {
 				// update user, get permissions for UI and return token, only one org so must be that one
 				let date = new Date();
 				return userAccountModel
-					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent })
+					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent, ip_address: ip })
 					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org ? org.id : undefined))
 					.then((perms) => {
 						// splice in identity
@@ -207,10 +209,84 @@ class Auth extends Service {
 			throw new RestError({
 				message: 'Authorization failed, please log in to authorize.',
 				method: 'POST',
-				url: this.$environment.JWTIssuer + '/account/authenticate',
+				url: this.$environment.HostAddress + '/account/authenticate',
 				body: { identity: '', password: '' }
 			}, 401);
 		}
+	}
+
+    /**
+     * @public @method sendReset
+	 * @description DO a password reset request by writing a key, itme and contacting the user
+     * @param {String} identity The identity to contact
+     * @param {String} identityType The identity type we are working from
+     * @return {Promise} Apromise from contacting the user
+     */
+	sendReset(identity, identityType) {
+		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
+		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
+		
+		let userModel = new UserModel();
+		let userAccount = new UserAccountModel();
+		
+		return userModel.getAuthedFromIdentity(identity, identityType)
+			.then((usr) => {
+				// check user in db
+				if (!usr) throw new RestError('Reset details incorrect, please try again.', 400);
+				// check user is active
+				if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
+				// Need to flood prevent here too
+				if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ten minutes between reset requests.', 401);
+
+				return usr;
+			})
+			.then((usr) => userAccount.update(usr.id, { password_reminder: this.encodeResetKey(usr.uuid), password_reminder_sent: new Date() }, ['password_reminder']))
+			.then((usrs) => {
+				// send email out
+				let comms = new Comms();
+				
+				// configure
+				comms.emailConfigure(
+					this.$environment.EmailHost,
+					this.$environment.EmailPort,
+					this.$environment.EmailSecureWithTls,
+					this.$environment.EmailUsername,
+					this.$environment.EmailPassword
+				);
+				
+				return comms.emailSend(
+					this.$environment.EmailFromAddress,
+					this.$environment.EmailFromName, 
+					'Test Subject', 
+					'HTML message with tls ' + this.$environment.HostAddress + '/account/reset/' + usrs[0].password_reminder, 
+					'Optional Alt text message'
+				);
+			})
+	}
+
+    /**
+     * @public @method processReset
+	 * @description Process a password reset request from token
+     * @param {String} identity The identity to contact
+     * @param {String} identityType The identity type we are working from
+     * @return {Promise} Apromise from contacting the user
+     */
+	processReset(token, identity, identityType, password) {
+		if (!token) throw new RestError('Reset details incorrect, please try again.', 400);
+		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
+		if (!identity || !identityType || !password) throw new RestError('Reset details incorrect, please try again.', 400);
+
+		let userModel = new UserModel();
+		let userIdentity = new UserIdentityModel();
+		let userAccount = new UserAccountModel();
+
+		return Promise.resolve().then(() => this.decodeResetKey(token))
+			.then((uuid) => userModel.getAuthedFromUUID(uuid))
+			.then((usr) => userIdentity.find({ user_id: usr.id, identity: identity, type: identityType}))
+			.then((usr) => {
+				if (usr[0].identity !== identity) throw new RestError('Reset details incorrect, please try again.', 401)
+				return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(password)})
+			});
 	}
 
     /**
@@ -221,7 +297,7 @@ class Auth extends Service {
      */
 	generateJWT(user, organisation, userAgent) {
 		return JWT.sign({
-			iss: this.$environment.JWTIssuer,
+			iss: this.$environment.HostAddress,
 			aud: this.$client.origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
@@ -232,6 +308,37 @@ class Auth extends Service {
 			organisationUUID: organisation ? organisation.uuid : undefined,
 			userAgent: userAgent
 		}, process.env.JWTKey, { algorithm: 'HS256' });
+	}
+
+    /**
+     * @public @method encodeResetKey
+	 * @description Creates a reset key, based on JWT to send to a user
+     * @param {String} uuid The user uuid
+     * @return {String} Encrypted JWT token
+     */
+	encodeResetKey(uuid) {
+		return Crypto.encryptAES256CBC(JWT.sign({
+			iss: this.$environment.HostAddress,
+			aud: this.$client.origin,
+			iat: Math.floor(Date.now() / 1000),
+			nbf: Math.floor(Date.now() / 1000),
+			exp: Math.floor(Date.now() / 1000) + 600,
+			uuid: uuid
+		}, process.env.JWTKey, { algorithm: 'HS256' })
+		, this.$environment.AESKey);
+	}
+
+    /**
+     * @public @method decodeResetKey
+	 * @description Decodes a reset key and return uuid
+     * @param {String} token The token to decode
+     * @return {String} The UUID of the user
+     */
+	decodeResetKey(token) {
+		token = Crypto.decryptAES256CBC(token, this.$environment.AESKey);
+		if (!this.verifyJWT(token)) throw RestError({message: 'Unable to verify reset key'}, 401);
+		let decoded = JWT.decode(token, { complete: true });
+		return decoded.payload.uuid;
 	}
 
     /**
