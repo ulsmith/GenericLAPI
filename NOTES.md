@@ -7,6 +7,8 @@
 
 ### raw crud access to data
 
+ui.route.part
+
 api.identity.user                               access to your user
 api.identity.user.related                       access to related users (same org)
 api.identity.user.all                           access to all users

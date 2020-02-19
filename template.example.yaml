@@ -18,11 +18,22 @@ Globals:
         Version: 0.0.1
         Mode: development
         CorsWhitelist: 'http://your-ui-dns-address.com' 
-
-        JWTIssuer: 'http://0.0.0.0'
+        HostAddress: 'http://localhost:3000'
         JWTKey: ...zCDAieQVC...
         JWTExpireSeconds: 3000
+        
+        AESKey: fDA...QVC
 
+        PasswordResetExpireSeconds: 600
+        
+        EmailHost: smtp....com
+        EmailPort: 465
+        EmailSecureWithTls: true
+        EmailUsername: ra....com
+        EmailPassword: s...l
+        EmailFromAddress: p...t
+        EmailFromName: '"No Reply" <no-reply@r....net>'
+        
         KnexEngine: 'postgres'
         KnexHost: 'host-address-for-db'
         KnexPort: 5432
@@ -50,21 +61,80 @@ Resources:
           - subnet-xxxx2
           - subnet-xxxx3
       Events:
-        AuthenticatePost:
+        AccountAuthenticatePost:
           Type: Api
           Properties:
             Path: /account/authenticate
             Method: post
-        AuthenticateGet:
+        AccountAuthenticateGet:
           Type: Api
           Properties:
             Path: /account/authenticate
             Method: get
-        RefreshPost:
+        AccountRefreshPost:
           Type: Api
           Properties:
             Path: /account/refresh
             Method: post
+        AccountResetPost:
+          Type: Api
+          Properties:
+            Path: /account/reset
+            Method: post
+        AccountResetPatch:
+          Type: Api
+          Properties:
+            Path: /account/reset/{token}
+            Method: patch
+
+  Identity:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 10
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+        SubnetIds:
+          - subnet-xxxx1
+          - subnet-xxxx2
+          - subnet-xxxx3
+      Events:
+        IdentityOrganisationPost:
+          Type: Api
+          Properties:
+            Path: /identity/organisation
+            Method: post
+        IdentityOrganisationAny:
+          Type: Api
+          Properties:
+            Path: /identity/organisation/{uuid}
+            Method: any
+        IdentityUserPost:
+          Type: Api
+          Properties:
+            Path: /identity/user
+            Method: post
+        IdentityUserAny:
+          Type: Api
+          Properties:
+            Path: /identity/user/{uuid}
+            Method: any
+        IdentityUserAccountPatch:
+          Type: Api
+          Properties:
+            Path: /identity/user-account/{uuid}
+            Method: patch
+        IdentityDepartmentPost:
+          Type: Api
+          Properties:
+            Path: /identity/department
+            Method: post
+        IdentityDepartmentAny:
+          Type: Api
+          Properties:
+            Path: /identity/department/{id}
+            Method: any
 
   Health:
     Type: AWS::Serverless::Function
