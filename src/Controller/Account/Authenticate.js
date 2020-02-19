@@ -42,7 +42,8 @@ class Authenticate extends Controller {
             event.parsedBody.identityType || 'email', 
             event.parsedBody.password, 
             event.parsedBody.organisationUUID, 
-            event.requestContext.identity.userAgent
+            event.requestContext.identity.userAgent,
+            event.requestContext.identity.sourceIp
         );
 	}
 
