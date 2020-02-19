@@ -166,10 +166,6 @@ class User extends Controller {
 		// check permissions for access, throws rest error on failure.
 		this.$services.auth.isPermitted('api.identity.user', 'delete');
 
-		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.user.uuid) this.$services.auth.isPermitted('api.identity.user.organisation', 'delete');
-		else this.$services.auth.isPermitted('api.identity.user.system', 'delete');
-
 		// check partial dataset
 		let user = new UserModel();
 
@@ -182,8 +178,8 @@ class User extends Controller {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.related', 'read');
-				else this.$services.auth.isPermitted('api.identity.user.all', 'read');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'delete');
+				else this.$services.auth.isPermitted('api.identity.user.system', 'delete');
 
 				return usr;
 			})	
