@@ -8,6 +8,7 @@ const UserModel = require('../Model/Identity/User.js');
 const UserAccountModel = require('../Model/Identity/UserAccount.js');
 const UserIdentityModel = require('../Model/Identity/UserIdentity.js');
 const JWT = require('jsonwebtoken');
+const { PasswordResetHtml, PasswordResetText } = require('../View/Email/PasswordReset.js');
 
 /**
  * @namespace API/Service
@@ -240,11 +241,16 @@ class Auth extends Service {
 
 				return usr;
 			})
-			.then((usr) => userAccount.update(usr.id, { password_reminder: this.encodeResetKey(usr.uuid), password_reminder_sent: new Date() }, ['password_reminder']))
-			.then((usrs) => {
+			.then((usr) => {
+				return userAccount.update(usr.id, { 
+					password_reminder: this.encodeResetKey(usr.uuid), 
+					password_reminder_sent: new Date()
+				}, ['password_reminder']).then((usa) => [usr, usa[0]]);
+			})
+			.then((data) => {
 				// send email out
 				let comms = new Comms();
-				
+				console.log(111);
 				// configure
 				comms.emailConfigure(
 					this.$environment.EmailHost,
@@ -253,13 +259,20 @@ class Auth extends Service {
 					this.$environment.EmailUsername,
 					this.$environment.EmailPassword
 				);
+
+				let emailData = {
+					systemName: this.$environment.HostName,
+					systemUrl: this.$environment.HostAddress,
+					name: data[0].name,
+					token: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+				};
 				
 				return comms.emailSend(
 					this.$environment.EmailFromAddress,
 					this.$environment.EmailFromName, 
 					'Test Subject', 
-					'HTML message with tls ' + this.$environment.HostAddress + '/account/reset/' + usrs[0].password_reminder, 
-					'Optional Alt text message'
+					PasswordResetHtml(emailData), 
+					PasswordResetText(emailData)
 				);
 			})
 	}
