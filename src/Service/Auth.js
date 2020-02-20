@@ -250,7 +250,7 @@ class Auth extends Service {
 			.then((data) => {
 				// send email out
 				let comms = new Comms();
-				console.log(111);
+
 				// configure
 				comms.emailConfigure(
 					this.$environment.EmailHost,
