@@ -59,6 +59,22 @@ class DataTools {
 	 * @return {String} The camelified string
 	 */
 	static camelToSnake(s) { return s.replace(/[A-Z]/g, (m) => '_' + m[0].toLowerCase()) }
+
+	/**
+	 * @public @static @name html
+	 * @description Create html template string and bind in any properties into the string
+	 * @param {...Mixed} properties The properties sent into to the method as an array
+	 * @return {String} The html string with properties spliced in using js template literals
+	 */
+	static html(...properties) { return properties[0].reduce((acc, cur, idx) => acc + properties[idx] + cur) }
+
+	/**
+	 * @public @static @name text
+	 * @description Create text template string and bind in any properties into the string
+	 * @param {...Mixed} properties The properties sent into to the method as an array
+	 * @return {String} The text string with properties spliced in using js template literals
+	 */
+	static text(...properties) { return properties[0].reduce((acc, cur, idx) => acc + properties[idx] + cur) }
 }
 
 module.exports = DataTools;
