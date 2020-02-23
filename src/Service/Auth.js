@@ -223,7 +223,7 @@ class Auth extends Service {
      * @param {String} identityType The identity type we are working from
      * @return {Promise} Apromise from contacting the user
      */
-	sendReset(identity, identityType) {
+	sendReset(identity, identityType, origin, route) {
 		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
 		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
 		
@@ -264,7 +264,9 @@ class Auth extends Service {
 					systemName: this.$environment.HostName,
 					systemUrl: this.$environment.HostAddress,
 					name: data[0].name,
-					token: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+					token: origin && route 
+						? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder 
+						: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
 				};
 				
 				return comms.emailSend(
@@ -300,6 +302,109 @@ class Auth extends Service {
 				if (usr[0].identity !== identity) throw new RestError('Reset details incorrect, please try again.', 401)
 				return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(password)})
 			});
+	}
+
+    /**
+     * @public @method sendRegister
+	 * @description DO a password reset request by writing a key, itme and contacting the user
+     * @param {String} identity The identity to contact
+     * @param {String} identityType The identity type we are working from
+     * @return {Promise} Apromise from contacting the user
+     */
+	sendRegister(identity, identityType, password) {
+
+        // check not currently a user
+
+        // if already a user, just send email saying your already registered, please complete a password reset
+
+        // if not a user, add to another registration table identity, identityType, password, email token to verify
+
+        // geenrate return message to please check idenittyType
+
+		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
+		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
+
+		// let userModel = new UserModel();
+		// let userAccount = new UserAccountModel();
+
+		// return userModel.getAuthedFromIdentity(identity, identityType)
+		// 	.then((usr) => {
+		// 		// check user in db
+		// 		if (!usr) throw new RestError('Reset details incorrect, please try again.', 400);
+		// 		// check user is active
+		// 		if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
+		// 		// Need to flood prevent here too
+		// 		if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ten minutes between reset requests.', 401);
+
+		// 		return usr;
+		// 	})
+		// 	.then((usr) => {
+		// 		return userAccount.update(usr.id, {
+		// 			password_reminder: this.encodeResetKey(usr.uuid),
+		// 			password_reminder_sent: new Date()
+		// 		}, ['password_reminder']).then((usa) => [usr, usa[0]]);
+		// 	})
+		// 	.then((data) => {
+		// 		// send email out
+		// 		let comms = new Comms();
+
+		// 		// configure
+		// 		comms.emailConfigure(
+		// 			this.$environment.EmailHost,
+		// 			this.$environment.EmailPort,
+		// 			this.$environment.EmailSecureWithTls,
+		// 			this.$environment.EmailUsername,
+		// 			this.$environment.EmailPassword
+		// 		);
+
+		// 		let emailData = {
+		// 			systemName: this.$environment.HostName,
+		// 			systemUrl: this.$environment.HostAddress,
+		// 			name: data[0].name,
+		// 			token: origin && route
+		// 				? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
+		// 				: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+		// 		};
+
+		// 		return comms.emailSend(
+		// 			this.$environment.EmailFromAddress,
+		// 			this.$environment.EmailFromName,
+		// 			'Test Subject',
+		// 			PasswordResetHtml(emailData),
+		// 			PasswordResetText(emailData)
+		// 		);
+		// 	})
+	}
+
+    /**
+     * @public @method processRegister
+	 * @description Process a password reset request from token
+     * @param {String} identity The identity to contact
+     * @param {String} identityType The identity type we are working from
+     * @return {Promise} Apromise from contacting the user
+     */
+	processRegister(token, identity, identityType) {
+        // verify the token
+
+        // if cool, we add the user from register table to user table
+
+		// return message saying thanks for verifying
+		
+		// if (!token) throw new RestError('Reset details incorrect, please try again.', 400);
+		// if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
+		// if (!identity || !identityType || !password) throw new RestError('Reset details incorrect, please try again.', 400);
+
+		// let userModel = new UserModel();
+		// let userIdentity = new UserIdentityModel();
+		// let userAccount = new UserAccountModel();
+
+		// return Promise.resolve().then(() => this.decodeResetKey(token))
+		// 	.then((uuid) => userModel.getAuthedFromUUID(uuid))
+		// 	.then((usr) => userIdentity.find({ user_id: usr.id, identity: identity, type: identityType }))
+		// 	.then((usr) => {
+		// 		if (usr[0].identity !== identity) throw new RestError('Reset details incorrect, please try again.', 401)
+		// 		return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(password) })
+		// 	});
 	}
 
     /**

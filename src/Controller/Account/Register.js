@@ -5,14 +5,14 @@ const RestError = require('../../System/RestError.js');
 
 /**
  * @namespace API/Controller/Account
- * @class Reset
+ * @class Register
  * @extends Controller
  * @description Controller class exposing methods over the routed endpoint
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class Reset extends Controller {
+class Register extends Controller {
 
 	/**
 	 * @public @method constructor
@@ -44,18 +44,17 @@ class Reset extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
     post(event, context) {
-        if (!event.parsedBody || !event.parsedBody.identity || !event.parsedBody.identityType) throw new RestError('We could not send your reset, please try again.', 401);
+        if (!event.parsedBody || !event.parsedBody.identity || !event.parsedBody.identityType || !event.parsedBody.password) throw new RestError('We could not register you, please try again.', 400);
 
-        return this.$services.auth.sendReset(
+        return this.$services.auth.sendRegister(
             event.parsedBody.identity,
             event.parsedBody.identityType,
-            event.headers.Origin,
             event.parsedBody.route
         ).then(() => 'Password reset')
-            .catch((error) => {
-                if (error.name === 'RestError' && error.statusCode === 401) throw error;
-                throw new RestError('Password reset failed', 400);
-            });
+        // .catch((error) => {
+        //     if (error.name === 'RestError' && error.statusCode === 401) throw error;
+        //     throw new RestError('Password reset failed', 400);
+        // });
     }
 
     /**
@@ -66,22 +65,20 @@ class Reset extends Controller {
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
      */
     patch(event) {
-        if (!event.pathParameters.token || !event.parsedBody.identity || !event.parsedBody.identityType || !event.parsedBody.password) throw new RestError('Password reset failed', 401);
+        if (!event.pathParameters.token || !event.parsedBody.identity || !event.parsedBody.identityType) throw new RestError('We could not register you, please try again.', 401);
 
-        // process reset request
-        return this.$services.auth.processReset(
-            event.pathParameters.token,
-            event.parsedBody.identity,
-            event.parsedBody.identityType,
-            event.parsedBody.password
-        ).then(() => 'Password reset successfully')
-        .catch((error) => {
-            if (error.name === 'TokenExpiredError') throw new RestError('Password reset token expired', 401);
-            throw new RestError('Password reset failed', 400);
-        });
+        // // process reset request
+        // return this.$services.auth.processRegister(
+        //     event.pathParameters.token,
+        //     event.parsedBody.identity,
+        //     event.parsedBody.identityType,
+        //     event.parsedBody.password
+        // ).then(() => 'Password reset successfully')
+        //     .catch((error) => {
+        //         if (error.name === 'TokenExpiredError') throw new RestError('Password reset token expired', 401);
+        //         throw new RestError('Password reset failed', 400);
+        //     });
     }
 }
 
-module.exports = Reset;
-
-
+module.exports = Register;
