@@ -272,7 +272,7 @@ class Auth extends Service {
 				return comms.emailSend(
 					this.$environment.EmailFromAddress,
 					this.$environment.EmailFromName, 
-					'Test Subject', 
+					'Password Reset', 
 					PasswordResetHtml(emailData), 
 					PasswordResetText(emailData)
 				);
@@ -312,38 +312,52 @@ class Auth extends Service {
      * @return {Promise} Apromise from contacting the user
      */
 	sendRegister(identity, identityType, password) {
-
-        // check not currently a user
-
-        // if already a user, just send email saying your already registered, please complete a password reset
-
-        // if not a user, add to another registration table identity, identityType, password, email token to verify
-
-        // geenrate return message to please check idenittyType
-
 		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
 		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
+		
+		let userModel = new UserModel();
+		
+		return userModel.getAuthedFromIdentity(identity, identityType)
+			.then((usr) => {
+				if (usr) return usr;
 
-		// let userModel = new UserModel();
-		// let userAccount = new UserAccountModel();
+				// if not a user, add to another registration table identity, identityType, password, email token to verify	
+				// then return falls to make right email go out
+			})
+			.then((usr) => {
+				// send email out
+				let comms = new Comms();
 
-		// return userModel.getAuthedFromIdentity(identity, identityType)
-		// 	.then((usr) => {
-		// 		// check user in db
-		// 		if (!usr) throw new RestError('Reset details incorrect, please try again.', 400);
-		// 		// check user is active
-		// 		if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
-		// 		// Need to flood prevent here too
-		// 		if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ten minutes between reset requests.', 401);
+				// configure
+				comms.emailConfigure(
+					this.$environment.EmailHost,
+					this.$environment.EmailPort,
+					this.$environment.EmailSecureWithTls,
+					this.$environment.EmailUsername,
+					this.$environment.EmailPassword
+				);
 
-		// 		return usr;
-		// 	})
-		// 	.then((usr) => {
+				let emailData = {
+					systemName: this.$environment.HostName,
+					systemUrl: this.$environment.HostAddress,
+					name: data[0].name
+				}
+
+				if (usr) {
+					emailData.link = origin ? origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
+					return comms.emailSend(this.$environment.EmailFromAddress, this.$environment.EmailFromName, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
+				} else {
+					// emailData.token = origin && route ? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+					// return comms.emailSend(this.$environment.EmailFromAddress, this.$environment.EmailFromName, 'Test Subject', PasswordResetHtml(emailData), PasswordResetText(emailData));
+				}
+			})
+			.then(() => {
+				// throw new RestError(`Cannot register this ${identityType}, already present`, 401);
 		// 		return userAccount.update(usr.id, {
 		// 			password_reminder: this.encodeResetKey(usr.uuid),
 		// 			password_reminder_sent: new Date()
 		// 		}, ['password_reminder']).then((usa) => [usr, usa[0]]);
-		// 	})
+			})
 		// 	.then((data) => {
 		// 		// send email out
 		// 		let comms = new Comms();
