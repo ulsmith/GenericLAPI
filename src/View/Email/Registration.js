@@ -26,11 +26,11 @@ const RegistrationHtml = (props) => DataTools.html`
 	</style>
 
 	<div class="header">
-		<h1 class="title">Welcome ${props.name}!</h1>
+		<h1 class="title">Welcome!</h1>
 	</div>
 	<div class="main">
-		<p>This identity just registered for an account at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, so hi there!</p>
-		<p>If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.</p>
+		<p>This identity (email) just registered for an account at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, so hi there!</p>
+		<p>If this was not you that requested this, you may ignore this message; new registrations expire after 10min.</p>
 		<p>If you keep getting these emails, someone is trying to register your email on our system.</p>
 		<p>If you did make this request, thats great, we just need you to verify your identity by clicking the link to confirm.</p>
 		<p class="text-center"><a href="${props.token}" class="text-button">Verify your Email</a></p>
@@ -39,7 +39,6 @@ const RegistrationHtml = (props) => DataTools.html`
 		<p class="signature">The ${props.systemName} Team.</p>
 	</div>
 	<div class="footer">
-		<p>${props.systemUrl}</p>
 		<p>${props.systemName}</p>
 	</div>
 `;
@@ -53,10 +52,10 @@ const RegistrationHtml = (props) => DataTools.html`
  * @license MIT 
  */
 const RegistrationText = (props) => DataTools.text`
-	Welcome ${props.name}!
+	Welcome!
 
 
-	This identity just registered for an account at ${props.systemName} [${props.systemUrl}], so hi there!</p>
+	This identity (email) just registered for an account at ${props.systemName} [${props.systemUrl}], so hi there!</p>
 	
 	If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.
 	
@@ -76,7 +75,6 @@ const RegistrationText = (props) => DataTools.text`
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemUrl}</p>
 	${props.systemName}</p>
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'

@@ -29,17 +29,16 @@ const YourAlreadyAUserHtml = (props) => DataTools.html`
 		<h1 class="title">Your Already A User ${props.name}!</h1>
 	</div>
 	<div class="main">
-		<p>You just tried to create an at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, but your already a member.</p>
-		<p>If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.</p>
+		<p>You just tried to create an account at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, but your already a member.</p>
+		<p>If this was not you that requested this, you may ignore this message; new registrations expire after automatically.</p>
 		<p>If you did make this request, thats good too, but you just need to go to the website and log in.</p>
-		<p>To reset your password, in the event you forgot it, just click the link in the login screen and add your identity, we will send it to you via this means.</p>
-		<p class="text-center"><a href="${props.link}" class="text-button">${props.link}</a></p>
+		<p>To reset your password, in the event you forgot it, just click the link in the login screen and add your identity, we will then send it to you via this means.</p>
+		<p class="text-center"><a href="${props.link}" class="text-button">${props.systemName}</a></p>
 		<p class="text-center text-link">${props.link}</p>
 		<p>Thanks again for using ${props.systemName}!</p>
 		<p class="signature">The ${props.systemName} Team.</p>
 	</div>
 	<div class="footer">
-		<p>${props.systemUrl}</p>
 		<p>${props.systemName}</p>
 	</div>
 `;
@@ -56,13 +55,13 @@ const YourAlreadyAUserText = (props) => DataTools.text`
 	Your Already A User ${props.name}!
 
 
-	You just tried to create an at ${props.systemName} [${props.systemUrl}], but your already a member.
+	You just tried to create an account at ${props.systemName} [${props.systemUrl}], but your already a member.
 	
-	If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.
+	If this was not you that requested this, you may ignore this message; new registrations expire automatically.
 	
 	If you did make this request, thats good too, but you just need to go to the website and log in.
 	
-	To reset your password, in the event you forgot it, just click the link in the login screen and add your identity, we will send it to you via this means.
+	To reset your password, in the event you forgot it, just click the link in the login screen and add your identity, we will then send it to you via this means.
 	
 	-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	
@@ -76,7 +75,6 @@ const YourAlreadyAUserText = (props) => DataTools.text`
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemUrl}</p>
 	${props.systemName}</p>
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'

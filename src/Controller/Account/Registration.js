@@ -5,14 +5,14 @@ const RestError = require('../../System/RestError.js');
 
 /**
  * @namespace API/Controller/Account
- * @class Register
+ * @class Registration
  * @extends Controller
  * @description Controller class exposing methods over the routed endpoint
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class Register extends Controller {
+class Registration extends Controller {
 
 	/**
 	 * @public @method constructor
@@ -47,14 +47,19 @@ class Register extends Controller {
         if (!event.parsedBody || !event.parsedBody.identity || !event.parsedBody.identityType || !event.parsedBody.password) throw new RestError('We could not register you, please try again.', 400);
 
         return this.$services.auth.sendRegister(
-            event.parsedBody.identity,
-            event.parsedBody.identityType,
-            event.parsedBody.route
-        ).then(() => 'Password reset')
-        // .catch((error) => {
-        //     if (error.name === 'RestError' && error.statusCode === 401) throw error;
-        //     throw new RestError('Password reset failed', 400);
-        // });
+                event.parsedBody.identity,
+                event.parsedBody.identityType,
+                event.parsedBody.password,
+                event.headers.Origin,
+                event.parsedBody.route,
+                event.requestContext.identity.userAgent,
+                event.requestContext.identity.sourceIp
+            )
+            .then(() => 'Registration sent')
+            .catch((error) => {
+                if (error.name === 'RestError') throw error;
+                throw new RestError('Could not send registration', 400);
+            });
     }
 
     /**
@@ -81,4 +86,4 @@ class Register extends Controller {
     }
 }
 
-module.exports = Register;
+module.exports = Registration;

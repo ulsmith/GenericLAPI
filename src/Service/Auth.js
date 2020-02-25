@@ -7,8 +7,11 @@ const Comms = require('../Library/Comms.js');
 const UserModel = require('../Model/Identity/User.js');
 const UserAccountModel = require('../Model/Identity/UserAccount.js');
 const UserIdentityModel = require('../Model/Identity/UserIdentity.js');
+const RegistrationModel = require('../Model/Identity/Registration.js');
 const JWT = require('jsonwebtoken');
 const { PasswordResetHtml, PasswordResetText } = require('../View/Email/PasswordReset.js');
+const { YourAlreadyAUserHtml, YourAlreadyAUserText } = require('../View/Email/YourAlreadyAUser.js');
+const { RegistrationHtml, RegistrationText } = require('../View/Email/Registration.js');
 
 /**
  * @namespace API/Service
@@ -221,6 +224,8 @@ class Auth extends Service {
 	 * @description DO a password reset request by writing a key, itme and contacting the user
      * @param {String} identity The identity to contact
      * @param {String} identityType The identity type we are working from
+     * @param {String} origin The origin the request came from
+     * @param {String} route The route the UI tells us to divert too
      * @return {Promise} Apromise from contacting the user
      */
 	sendReset(identity, identityType, origin, route) {
@@ -237,7 +242,7 @@ class Auth extends Service {
 				// check user is active
 				if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
 				// Need to flood prevent here too
-				if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ten minutes between reset requests.', 401);
+				if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ' + (this.$environment.PasswordResetExpireSeconds / 60) + ' minutes between reset requests.', 401);
 
 				return usr;
 			})
@@ -269,21 +274,17 @@ class Auth extends Service {
 						: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
 				};
 				
-				return comms.emailSend(
-					this.$environment.EmailFromAddress,
-					this.$environment.EmailFromName, 
-					'Password Reset', 
-					PasswordResetHtml(emailData), 
-					PasswordResetText(emailData)
-				);
+				return comms.emailSend(identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
 			})
 	}
 
     /**
      * @public @method processReset
 	 * @description Process a password reset request from token
+     * @param {String} token The token from the user
      * @param {String} identity The identity to contact
      * @param {String} identityType The identity type we are working from
+     * @param {String} password The password sent in by the user to write
      * @return {Promise} Apromise from contacting the user
      */
 	processReset(token, identity, identityType, password) {
@@ -309,22 +310,51 @@ class Auth extends Service {
 	 * @description DO a password reset request by writing a key, itme and contacting the user
      * @param {String} identity The identity to contact
      * @param {String} identityType The identity type we are working from
+     * @param {String} origin The origin the request came from
+     * @param {String} route The route the UI tells us to divert too
+     * @param {String} userAgent The user agent string form the browser
+     * @param {String} ipAddress The ip address the request came from
      * @return {Promise} Apromise from contacting the user
      */
-	sendRegister(identity, identityType, password) {
+	sendRegister(identity, identityType, password, origin, route, userAgent, ipAddress) {
 		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
 		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
 		
 		let userModel = new UserModel();
+		let registrationModel = new RegistrationModel();
 		
 		return userModel.getAuthedFromIdentity(identity, identityType)
 			.then((usr) => {
-				if (usr) return usr;
+				if (usr && usr.uuid) return usr;
+				
+				return registrationModel.find({ identity: identity, identity_type: identityType })
+					.then((reg) => {
+						// already registered and under ten minutes, throw error
+						if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.RegistrationExpireSeconds)) throw new RestError('Please give ' + (this.$environment.RegistrationExpireSeconds / 60) + ' minutes between registraion requests.', 401);
 
-				// if not a user, add to another registration table identity, identityType, password, email token to verify	
-				// then return falls to make right email go out
+						let token = this.encodeResetKey(identity);
+
+						if (reg[0]) {
+							return registrationModel.update(reg[0].id, {
+								token: token,
+								token_sent: new Date(),
+								ip_address: ipAddress,
+								user_agent: userAgent
+							}).then(() => token);
+						}
+
+						return registrationModel.insert({
+							identity: identity,
+							identity_type: identityType,
+							password: Crypto.passwordHash(password),
+							token: token,
+							token_sent: new Date(),
+							ip_address: ipAddress,
+							user_agent: userAgent
+						}).then(() => token);
+					})
 			})
-			.then((usr) => {
+			.then((data) => {
 				// send email out
 				let comms = new Comms();
 
@@ -337,57 +367,17 @@ class Auth extends Service {
 					this.$environment.EmailPassword
 				);
 
-				let emailData = {
-					systemName: this.$environment.HostName,
-					systemUrl: this.$environment.HostAddress,
-					name: data[0].name
-				}
-
-				if (usr) {
+				let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress }
+				
+				if (data && data.uuid) {
+					emailData.name = data.name
 					emailData.link = origin ? origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
-					return comms.emailSend(this.$environment.EmailFromAddress, this.$environment.EmailFromName, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
-				} else {
-					// emailData.token = origin && route ? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
-					// return comms.emailSend(this.$environment.EmailFromAddress, this.$environment.EmailFromName, 'Test Subject', PasswordResetHtml(emailData), PasswordResetText(emailData));
+					return comms.emailSend(identity, this.$environment.EmailFrom, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
 				}
+
+				emailData.token = origin && route ? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
+				return comms.emailSend(identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
 			})
-			.then(() => {
-				// throw new RestError(`Cannot register this ${identityType}, already present`, 401);
-		// 		return userAccount.update(usr.id, {
-		// 			password_reminder: this.encodeResetKey(usr.uuid),
-		// 			password_reminder_sent: new Date()
-		// 		}, ['password_reminder']).then((usa) => [usr, usa[0]]);
-			})
-		// 	.then((data) => {
-		// 		// send email out
-		// 		let comms = new Comms();
-
-		// 		// configure
-		// 		comms.emailConfigure(
-		// 			this.$environment.EmailHost,
-		// 			this.$environment.EmailPort,
-		// 			this.$environment.EmailSecureWithTls,
-		// 			this.$environment.EmailUsername,
-		// 			this.$environment.EmailPassword
-		// 		);
-
-		// 		let emailData = {
-		// 			systemName: this.$environment.HostName,
-		// 			systemUrl: this.$environment.HostAddress,
-		// 			name: data[0].name,
-		// 			token: origin && route
-		// 				? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
-		// 				: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
-		// 		};
-
-		// 		return comms.emailSend(
-		// 			this.$environment.EmailFromAddress,
-		// 			this.$environment.EmailFromName,
-		// 			'Test Subject',
-		// 			PasswordResetHtml(emailData),
-		// 			PasswordResetText(emailData)
-		// 		);
-		// 	})
 	}
 
     /**

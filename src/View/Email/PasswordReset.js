@@ -39,7 +39,6 @@ const PasswordResetHtml = (props) => DataTools.html`
 		<p class="signature">The ${props.systemName} Team.</p>
 	</div>
 	<div class="footer">
-		<p>${props.systemUrl}</p>
 		<p>${props.systemName}</p>
 	</div>
 `;
@@ -76,7 +75,6 @@ const PasswordResetText = (props) => DataTools.text`
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemUrl}</p>
 	${props.systemName}</p>
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'

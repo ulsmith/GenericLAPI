@@ -74,5 +74,7 @@ DROP TABLE identity.user_identity;
 
 DROP TABLE identity.user_role;
 
+DROP TABLE identity.registration;
+
 -- End of file.
 
