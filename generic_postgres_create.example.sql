@@ -242,6 +242,26 @@ CREATE INDEX user_role_idx_1 on identity.user_role (user_id ASC,role_id ASC);
 
 CREATE TRIGGER updated__user_role BEFORE UPDATE ON "identity"."user_role" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
+-- Table: user
+CREATE TABLE identity."registration" (
+    id serial  NOT NULL,
+    created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    identity text  NOT NULL,
+    type user_identity_type  NOT NULL DEFAULT 'email',
+    password varchar(255)  NOT NULL,
+    password_reminder text  NULL,
+    password_reminder_sent timestamp  NULL,
+    ip_address cidr  NULL,
+    user_agent text  NULL,
+    CONSTRAINT registration_ak_1 UNIQUE (identity, type) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT identity__registration__primary_key PRIMARY KEY (id)
+);
+
+CREATE INDEX registration_idx_1 on identity.registration (identity ASC,type ASC);
+
+CREATE TRIGGER updated__registration BEFORE UPDATE ON "identity"."registration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
+
 -- foreign keys
 -- Reference: department_group_department (table: department_group)
 ALTER TABLE identity.department_group ADD CONSTRAINT department_group_department
