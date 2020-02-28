@@ -262,6 +262,21 @@ CREATE INDEX registration_idx_1 on identity.registration (identity ASC,identity_
 
 CREATE TRIGGER updated__registration BEFORE UPDATE ON "identity"."registration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
+-- Table: registration
+CREATE TABLE public."configuration" (
+    id serial  NOT NULL,
+    created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    key text  NOT NULL,
+    value json  NULL,
+    CONSTRAINT configuration_ak_1 UNIQUE (key) NOT DEFERRABLE  INITIALLY IMMEDIATE,
+    CONSTRAINT public__configuration__primary_key PRIMARY KEY (id)
+);
+
+CREATE INDEX configuration_idx_1 on public.configuration (key ASC);
+
+CREATE TRIGGER updated__configuration BEFORE UPDATE ON "public"."configuration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
+
 -- foreign keys
 -- Reference: department_group_department (table: department_group)
 ALTER TABLE identity.department_group ADD CONSTRAINT department_group_department
@@ -414,6 +429,10 @@ ALTER TABLE identity.user_role ADD CONSTRAINT user_role_user
 ;
 
 -- Preload database with basic user
+
+-- add config
+INSERT INTO "public"."configuration" ("key", "value")
+VALUES ('registration', '{"autoActivateUser": false, "emailAdminOnRegistrationCreated": false, "emailAdminOnRegistrationCompleted": false}');;
 
 -- add org
 INSERT INTO "identity"."organisation" ("name", "name_unique", "description")
