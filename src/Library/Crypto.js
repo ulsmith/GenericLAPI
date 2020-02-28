@@ -311,6 +311,37 @@ class Crypto {
 		dec += decipher.final('utf8');
 		return dec;
 	}
+
+    /**
+     * @public @static @method encodeToken
+	 * @description Creates a JWT encoded token for use in passing to the public
+     * @param {String} key The key to hide in the token
+     * @return {String} Encrypted JWT token
+     */
+	static encodeToken(key) {
+		return Crypto.encryptAES256CBC(JWT.sign({
+			iss: this.$environment.HostAddress,
+			aud: this.$client.origin,
+			iat: Math.floor(Date.now() / 1000),
+			nbf: Math.floor(Date.now() / 1000),
+			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.TokenExpireSeconds),
+			key: key
+		}, process.env.JWTKey, { algorithm: 'HS256' })
+			, this.$environment.AESKey);
+	}
+
+    /**
+     * @public @static @method decodeToken
+	 * @description Decodes a reset key and return key
+     * @param {String} token The token to decode
+     * @return {String} The key from in the token
+     */
+	static decodeToken(token) {
+		token = Crypto.decryptAES256CBC(token, this.$environment.AESKey);
+		if (!this.verifyJWT(token)) throw RestError({ message: 'Unable to verify reset key' }, 401);
+		let decoded = JWT.decode(token, { complete: true });
+		return decoded.payload.key;
+	}
 }
 
 module.exports = Crypto;

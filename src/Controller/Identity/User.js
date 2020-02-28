@@ -3,6 +3,7 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const UserModel = require('../../Model/Identity/User.js');
+const Crypto = require('../../Library/Crypto.js');
 
 /**
  * @namespace API/Controller/Identity
@@ -76,6 +77,9 @@ class User extends Controller {
 		this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
 		
 		let user = new UserModel();
+
+		// hash the password
+		if (event.parsedBody.userAccount && event.parsedBody.userAccount.password) event.parsedBody.userAccount.password = Crypto.passwordHash(event.parsedBody.userAccount.password);
 		
 		// add a new user, with all meta tables, handle any system errors
 		return user.add(event.parsedBody).catch((error) => {
@@ -96,6 +100,9 @@ class User extends Controller {
 		this.$services.auth.isPermitted('api.identity.user', 'read,write');
 
 		let user = new UserModel();
+
+		// hash the password
+		if (event.parsedBody.userAccount && event.parsedBody.userAccount.password) event.parsedBody.userAccount.password = Crypto.passwordHash(event.parsedBody.userAccount.password);
 
 		// add a new user, with all meta tables, handle any system errors
 		return user.getDetailsFromUUID(event.pathParameters.uuid)

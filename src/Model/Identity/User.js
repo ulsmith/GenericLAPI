@@ -393,6 +393,7 @@ class User extends Model {
      * @description Add a user and all meta tables. Must include identity and account data
      * @param {String} data The data to combine into a new user
      * @return Promise a resulting promise with an error to feed back or data to send on
+	 * @example add({ name: <string>, identity: [{ identity: <string>, type: <email|phone> }], account: { password: <string> } });
 	 */
 	add(data) {
 		let userIdentity = new UserIdentityModel();
@@ -404,7 +405,6 @@ class User extends Model {
 			uMapped = this.mapDataToColumn(data);
 			uiMapped = userIdentity.mapDataArrayToColumn(data.userIdentity);
 			uaMapped = userAccount.mapDataToColumn(data.userAccount);
-			uaMapped.password = Crypto.passwordHash(uaMapped.password);
 		}).catch((error) => {
 			// manage error, parse and re-throw
 			if (error.name === 'SystemError') throw new SystemError(error.message, {user: {...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns}});
@@ -452,6 +452,7 @@ class User extends Model {
      * @param {String} data The data to combine into a new user
      * @param {Boolean} partial Perform a partial update of data (patch)
      * @return Promise a resulting promise with an error to feed back or data to send on
+	 * @example add({ name: <string>, identity: [{ identity: <string>, type: <email|phone> }], account: { password: <string> } });
 	 */
 	edit(id, data, partial) {
 		let userIdentity = new UserIdentityModel();
@@ -463,7 +464,6 @@ class User extends Model {
 			uMapped = this.mapDataToColumn(data, partial);
 			uiMapped = userIdentity.mapDataArrayToColumn(data.userIdentity, partial);
 			uaMapped = userAccount.mapDataToColumn(data.userAccount, partial);
-			uaMapped.password = Crypto.passwordHash(uaMapped.password);
 
 			// to edit password you must have current password too
 			if (!!data.password && !data.currentPassword) throw new SystemError('Must include current password when changing password');

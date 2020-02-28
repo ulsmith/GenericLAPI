@@ -2,6 +2,7 @@
 
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
+const Crypto = require('../../Library/Crypto.js');
 
 /**
  * @namespace API/Controller/Account
@@ -59,7 +60,7 @@ class Registration extends Controller {
                         // already registered and under ten minutes, throw error
                         if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between registraion requests.', 401);
 
-                        let token = this.encodeToken(event.parsedBody.identity);
+                        let token = Crypto.encodeToken(event.parsedBody.identity);
                         // NOTE: [Paul remove me]
                         // Setting, need to decide if email should go to me
                         // Email, user has registered
@@ -142,7 +143,7 @@ class Registration extends Controller {
         let registrationModel = new RegistrationModel();
         let userModel = new UserModel();
 
-        return Promise.resolve().then(() => this.decodeToken(event.pathParameters.token))
+        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token))
             .then((key) => { if (key !== event.parsedBody.identity) throw RestError('Registration token incorrect, please try again.', 401) })
             .then(() => registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType, token: event.pathParameters.token }).then((regs) => {
                 if (!regs || !regs[0] || !regs[0].identity) throw RestError('Registration token incorrect, please try again.', 401);

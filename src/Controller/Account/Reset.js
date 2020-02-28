@@ -2,6 +2,7 @@
 
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
+const Crypto = require('../../Library/Crypto.js');
 
 /**
  * @namespace API/Controller/Account
@@ -45,13 +46,53 @@ class Reset extends Controller {
      */
     post(event, context) {
         if (!event.parsedBody || !event.parsedBody.identity || !event.parsedBody.identityType) throw new RestError('We could not send your reset, please try again.', 401);
+        if (['email', 'phone'].indexOf(event.parsedBody.identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
 
-        return this.$services.auth.sendReset(
-            event.parsedBody.identity,
-            event.parsedBody.identityType,
-            event.headers.Origin,
-            event.parsedBody.route
-        ).then(() => 'Password reset')
+        let userModel = new UserModel();
+        let userAccount = new UserAccountModel();
+
+        return userModel.getAuthedFromIdentity(event.parsedBody.identity, event.parsedBody.identityType)
+            .then((usr) => {
+                // check user in db
+                if (!usr) throw new RestError('Reset details incorrect, please try again.', 400);
+                // check user is active
+                if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
+                // Need to flood prevent here too
+                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between reset requests.', 401);
+
+                return usr;
+            })
+            .then((usr) => {
+                return userAccount.update(usr.id, {
+                    password_reminder: Crypto.encodeToken(usr.uuid),
+                    password_reminder_sent: new Date()
+                }, ['password_reminder']).then((usa) => [usr, usa[0]]);
+            })
+            .then((data) => {
+                // send email out
+                let comms = new Comms();
+
+                // configure
+                comms.emailConfigure(
+                    this.$environment.EmailHost,
+                    this.$environment.EmailPort,
+                    this.$environment.EmailSecureWithTls,
+                    this.$environment.EmailUsername,
+                    this.$environment.EmailPassword
+                );
+
+                let emailData = {
+                    systemName: this.$environment.HostName,
+                    systemUrl: this.$environment.HostAddress,
+                    name: data[0].name,
+                    token: event.headers.Origin && event.parsedBody.route
+                        ? event.headers.Origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
+                        : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+                };
+
+                return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
+            })
+            .then(() => 'Password reset')
             .catch((error) => {
                 if (error.name === 'RestError' && error.statusCode === 401) throw error;
                 throw new RestError('Password reset failed', 400);
@@ -67,21 +108,24 @@ class Reset extends Controller {
      */
     patch(event) {
         if (!event.pathParameters.token || !event.parsedBody.identity || !event.parsedBody.identityType || !event.parsedBody.password) throw new RestError('Password reset failed', 401);
+        if (['email', 'phone'].indexOf(event.parsedBody.identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
 
-        // process reset request
-        return this.$services.auth.processReset(
-            event.pathParameters.token,
-            event.parsedBody.identity,
-            event.parsedBody.identityType,
-            event.parsedBody.password
-        ).then(() => 'Password reset successfully')
-        .catch((error) => {
-            if (error.name === 'TokenExpiredError') throw new RestError('Password reset token expired', 401);
-            throw new RestError('Password reset failed', 400);
-        });
+        let userModel = new UserModel();
+        let userIdentity = new UserIdentityModel();
+        let userAccount = new UserAccountModel();
+
+        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token))
+            .then((uuid) => userModel.getAuthedFromUUID(uuid))
+            .then((usr) => userIdentity.find({ user_id: usr.id, identity: event.parsedBody.identity, type: event.parsedBody.identityType }))
+            .then((usr) => {
+                if (usr[0].identity !== event.parsedBody.identity) throw new RestError('Reset details incorrect, please try again.', 401)
+                return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(event.parsedBody.password) })
+            }).then(() => 'Password reset successfully')
+            .catch((error) => {
+                if (error.name === 'TokenExpiredError') throw new RestError('Password reset token expired', 401);
+                throw new RestError('Password reset failed', 400);
+            });
     }
 }
 
 module.exports = Reset;
-
-

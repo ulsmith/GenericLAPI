@@ -220,272 +220,6 @@ class Auth extends Service {
 	}
 
     /**
-     * @public @method sendReset
-	 * @description DO a password reset request by writing a key, itme and contacting the user
-     * @param {String} identity The identity to contact
-     * @param {String} identityType The identity type we are working from
-     * @param {String} origin The origin the request came from
-     * @param {String} route The route the UI tells us to divert too
-     * @return {Promise} Apromise from contacting the user
-     */
-	sendReset(identity, identityType, origin, route) {
-		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
-		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
-		
-		let userModel = new UserModel();
-		let userAccount = new UserAccountModel();
-		
-		return userModel.getAuthedFromIdentity(identity, identityType)
-			.then((usr) => {
-				// check user in db
-				if (!usr) throw new RestError('Reset details incorrect, please try again.', 400);
-				// check user is active
-				if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
-				// Need to flood prevent here too
-				if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.PasswordResetExpireSeconds)) throw new RestError('Please give ' + (this.$environment.PasswordResetExpireSeconds / 60) + ' minutes between reset requests.', 401);
-
-				return usr;
-			})
-			.then((usr) => {
-				return userAccount.update(usr.id, { 
-					password_reminder: this.encodeResetKey(usr.uuid), 
-					password_reminder_sent: new Date()
-				}, ['password_reminder']).then((usa) => [usr, usa[0]]);
-			})
-			.then((data) => {
-				// send email out
-				let comms = new Comms();
-
-				// configure
-				comms.emailConfigure(
-					this.$environment.EmailHost,
-					this.$environment.EmailPort,
-					this.$environment.EmailSecureWithTls,
-					this.$environment.EmailUsername,
-					this.$environment.EmailPassword
-				);
-
-				let emailData = {
-					systemName: this.$environment.HostName,
-					systemUrl: this.$environment.HostAddress,
-					name: data[0].name,
-					token: origin && route 
-						? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder 
-						: this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
-				};
-				
-				return comms.emailSend(identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
-			})
-	}
-
-    /**
-     * @public @method processReset
-	 * @description Process a password reset request from token
-     * @param {String} token The token from the user
-     * @param {String} identity The identity to contact
-     * @param {String} identityType The identity type we are working from
-     * @param {String} password The password sent in by the user to write
-     * @return {Promise} Apromise from contacting the user
-     */
-	processReset(token, identity, identityType, password) {
-		if (!token) throw new RestError('Reset details incorrect, please try again.', 400);
-		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
-		if (!identity || !identityType || !password) throw new RestError('Reset details incorrect, please try again.', 400);
-
-		let userModel = new UserModel();
-		let userIdentity = new UserIdentityModel();
-		let userAccount = new UserAccountModel();
-
-		return Promise.resolve().then(() => this.decodeResetKey(token))
-			.then((uuid) => userModel.getAuthedFromUUID(uuid))
-			.then((usr) => userIdentity.find({ user_id: usr.id, identity: identity, type: identityType}))
-			.then((usr) => {
-				if (usr[0].identity !== identity) throw new RestError('Reset details incorrect, please try again.', 401)
-				return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(password)})
-			});
-	}
-
-    /**
-     * @public @method sendRegister
-	 * @description DO a password reset request by writing a key, itme and contacting the user
-     * @param {String} identity The identity to contact
-     * @param {String} identityType The identity type we are working from
-     * @param {String} origin The origin the request came from
-     * @param {String} route The route the UI tells us to divert too
-     * @param {String} userAgent The user agent string form the browser
-     * @param {String} ipAddress The ip address the request came from
-     * @return {Promise} Apromise from contacting the user
-     */
-	sendRegister(identity, identityType, password, origin, route, userAgent, ipAddress) {
-		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
-		if (!identity || !identityType) throw new RestError('Reset details incorrect, please try again.', 400);
-		
-		let userModel = new UserModel();
-		let registrationModel = new RegistrationModel();
-		
-		return userModel.getAuthedFromIdentity(identity, identityType)
-			.then((usr) => {
-				if (usr && usr.uuid) return usr;
-				
-				return registrationModel.find({ identity: identity, identity_type: identityType })
-					.then((reg) => {
-						// already registered and under ten minutes, throw error
-						if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.RegistrationExpireSeconds)) throw new RestError('Please give ' + (this.$environment.RegistrationExpireSeconds / 60) + ' minutes between registraion requests.', 401);
-
-						let token = this.encodeResetKey(identity);
-
-						if (reg[0]) {
-							return registrationModel.update(reg[0].id, {
-								token: token,
-								token_sent: new Date(),
-								ip_address: ipAddress,
-								user_agent: userAgent
-							}).then(() => token);
-						}
-
-						return registrationModel.insert({
-							identity: identity,
-							identity_type: identityType,
-							password: Crypto.passwordHash(password),
-							token: token,
-							token_sent: new Date(),
-							ip_address: ipAddress,
-							user_agent: userAgent
-						}).then(() => token);
-					})
-			})
-			.then((data) => {
-				// send email out
-				let comms = new Comms();
-
-				// configure
-				comms.emailConfigure(
-					this.$environment.EmailHost,
-					this.$environment.EmailPort,
-					this.$environment.EmailSecureWithTls,
-					this.$environment.EmailUsername,
-					this.$environment.EmailPassword
-				);
-
-				let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress }
-				
-				if (data && data.uuid) {
-					emailData.name = data.name
-					emailData.link = origin ? origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
-					return comms.emailSend(identity, this.$environment.EmailFrom, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
-				}
-
-				emailData.token = origin && route ? origin.replace(/^\/|\/$/g, '') + '/' + route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
-				return comms.emailSend(identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
-			})
-	}
-
-    /**
-     * @public @method processRegister
-	 * @description Process a password reset request from token
-     * @param {String} identity The identity to contact
-     * @param {String} identityType The identity type we are working from
-     * @return {Promise} Apromise from contacting the user
-     */
-	processRegister(token, identity, identityType) {
-        // verify the token
-
-        // if cool, we add the user from register table to user table
-
-		// return message saying thanks for verifying
-		
-		// if (!token) throw new RestError('Reset details incorrect, please try again.', 400);
-		// if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Reset details incorrect, please try again.', 400);
-		// if (!identity || !identityType || !password) throw new RestError('Reset details incorrect, please try again.', 400);
-
-		// let userModel = new UserModel();
-		// let userIdentity = new UserIdentityModel();
-		// let userAccount = new UserAccountModel();
-
-		// return Promise.resolve().then(() => this.decodeResetKey(token))
-		// 	.then((uuid) => userModel.getAuthedFromUUID(uuid))
-		// 	.then((usr) => userIdentity.find({ user_id: usr.id, identity: identity, type: identityType }))
-		// 	.then((usr) => {
-		// 		if (usr[0].identity !== identity) throw new RestError('Reset details incorrect, please try again.', 401)
-		// 		return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(password) })
-		// 	});
-	}
-
-    /**
-     * @public @method generateJWT
-	 * @description Creates a JWT from a user object
-     * @param {Object} user The user object to use for the JWT
-     * @return {String} JWT token
-     */
-	generateJWT(user, organisation, userAgent) {
-		return JWT.sign({
-			iss: this.$environment.HostAddress,
-			aud: this.$client.origin,
-			iat: Math.floor(Date.now() / 1000),
-			nbf: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
-			userUUID: user.uuid,
-			userIdentity: user.identity,
-			userIdentityType: user.identityType,
-			organisationUUID: organisation ? organisation.uuid : undefined,
-			userAgent: userAgent
-		}, process.env.JWTKey, { algorithm: 'HS256' });
-	}
-
-    /**
-     * @public @method encodeResetKey
-	 * @description Creates a reset key, based on JWT to send to a user
-     * @param {String} uuid The user uuid
-     * @return {String} Encrypted JWT token
-     */
-	encodeResetKey(uuid) {
-		return Crypto.encryptAES256CBC(JWT.sign({
-			iss: this.$environment.HostAddress,
-			aud: this.$client.origin,
-			iat: Math.floor(Date.now() / 1000),
-			nbf: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + 600,
-			uuid: uuid
-		}, process.env.JWTKey, { algorithm: 'HS256' })
-		, this.$environment.AESKey);
-	}
-
-    /**
-     * @public @method decodeResetKey
-	 * @description Decodes a reset key and return uuid
-     * @param {String} token The token to decode
-     * @return {String} The UUID of the user
-     */
-	decodeResetKey(token) {
-		token = Crypto.decryptAES256CBC(token, this.$environment.AESKey);
-		if (!this.verifyJWT(token)) throw RestError({message: 'Unable to verify reset key'}, 401);
-		let decoded = JWT.decode(token, { complete: true });
-		return decoded.payload.uuid;
-	}
-
-    /**
-     * @public @method verifyJWT
-	 * @description Verify JWT is valid
-     * @param {String} token The token to verify
-     * @return {Boolean} Is JWT verified or not?
-     */
-	verifyJWT(token) {
-		return JWT.verify(token, process.env.JWTKey, { algorithm: 'HS256' });
-	}
-
-    /**
-     * @public @method refreshJWT
-	 * @description Verify JWT is valid
-     * @param {String} token The token to verify
-     * @return {Boolean} Is JWT verified or not?
-     */
-	refreshJWT(token) {
-		let decoded = JWT.decode(token, { complete: true });
-		decoded.payload.exp = Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds);
-		return JWT.sign(decoded.payload, process.env.JWTKey, { algorithm: 'HS256' });
-	}
-
-    /**
      * @public @method isPermitted
 	 * @description Handle a permission denied situation
      * @param {String} role The specific role to check as 'api.aaa.bbb' or any of a combination of roles allowed 'api.aaa/aaaa.bbb/bbbb'
@@ -554,6 +288,49 @@ class Auth extends Service {
      * @return {Array} Do you have permissions, array of permission objects
      */
 	filterPermissions(regex) { return this.$services.auth.permissions.filter((perm) => regex.test(perm.role)) || [] }
+
+    /**
+     * @private @method _generateJWT
+	 * @description Creates a JWT from a user object
+     * @param {Object} user The user object to use for the JWT
+     * @return {String} JWT token
+     */
+	_generateJWT(user, organisation, userAgent) {
+		return JWT.sign({
+			iss: this.$environment.HostAddress,
+			aud: this.$client.origin,
+			iat: Math.floor(Date.now() / 1000),
+			nbf: Math.floor(Date.now() / 1000),
+			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
+			userUUID: user.uuid,
+			userIdentity: user.identity,
+			userIdentityType: user.identityType,
+			organisationUUID: organisation ? organisation.uuid : undefined,
+			userAgent: userAgent
+		}, process.env.JWTKey, { algorithm: 'HS256' });
+	}
+
+    /**
+     * @private @method _verifyJWT
+	 * @description Verify JWT is valid
+     * @param {String} token The token to verify
+     * @return {Boolean} Is JWT verified or not?
+     */
+	_verifyJWT(token) {
+		return JWT.verify(token, process.env.JWTKey, { algorithm: 'HS256' });
+	}
+
+    /**
+     * @private @method _refreshJWT
+	 * @description Verify JWT is valid
+     * @param {String} token The token to verify
+     * @return {Boolean} Is JWT verified or not?
+     */
+	_refreshJWT(token) {
+		let decoded = JWT.decode(token, { complete: true });
+		decoded.payload.exp = Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds);
+		return JWT.sign(decoded.payload, process.env.JWTKey, { algorithm: 'HS256' });
+	}
 }
 
 module.exports = Auth;
