@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const JWT = require('jsonwebtoken');
 
 /**
  * @namespace API/Library
@@ -318,16 +319,15 @@ class Crypto {
      * @param {String} key The key to hide in the token
      * @return {String} Encrypted JWT token
      */
-	static encodeToken(key) {
+	static encodeToken(key, host, origin, expire, JWTKey, AESKey) {
 		return Crypto.encryptAES256CBC(JWT.sign({
-			iss: this.$environment.HostAddress,
-			aud: this.$client.origin,
+			iss: host,
+			aud: origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.TokenExpireSeconds),
+			exp: Math.floor(Date.now() / 1000) + parseInt(expire),
 			key: key
-		}, process.env.JWTKey, { algorithm: 'HS256' })
-			, this.$environment.AESKey);
+		}, JWTKey, { algorithm: 'HS256' }), AESKey);
 	}
 
     /**
@@ -336,7 +336,7 @@ class Crypto {
      * @param {String} token The token to decode
      * @return {String} The key from in the token
      */
-	static decodeToken(token) {
+	static decodeToken(token, AESKey) {
 		token = Crypto.decryptAES256CBC(token, this.$environment.AESKey);
 		if (!this.verifyJWT(token)) throw RestError({ message: 'Unable to verify reset key' }, 401);
 		let decoded = JWT.decode(token, { complete: true });

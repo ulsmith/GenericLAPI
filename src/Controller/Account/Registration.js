@@ -62,14 +62,14 @@ class Registration extends Controller {
         return userModel.getAuthedFromIdentity(event.parsedBody.identity, event.parsedBody.identityType)
             .then((usr) => {
                 if (usr && usr.uuid) return usr;
-
+                
                 return registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType })
                     .then((reg) => {
                         // already registered and under ten minutes, throw error
                         if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between registraion requests.', 401);
-
-                        let token = Crypto.encodeToken(event.parsedBody.identity);
-
+                        
+                        let token = Crypto.encodeToken(event.parsedBody.identity, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
+                   
                         if (reg[0]) {
                             return registrationModel.update(reg[0].id, {
                                 password: Crypto.passwordHash(event.parsedBody.password),
@@ -79,7 +79,7 @@ class Registration extends Controller {
                                 user_agent: event.requestContext.identity.userAgent
                             }).then(() => token);
                         }
-
+                        
                         return registrationModel.insert({
                             identity: event.parsedBody.identity,
                             identity_type: event.parsedBody.identityType,
@@ -111,11 +111,12 @@ class Registration extends Controller {
                     emailData.link = this.$client.origin ? this.$client.origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
                     return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
                 }
-
+                
                 emailData.token = this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
                 return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
             })
             .then(() => {
+                let config = this.$services.config.get('admin');
                 if (config.emailAdminRegistrationCreated) {
                     // TODO: [Paul] config.email ... event.parsedBody.identity, event.parsedBody.identityType
                     // email admin to say new user created, but waiting to verify, get eithe ractivate or completed once done
@@ -143,7 +144,7 @@ class Registration extends Controller {
         let registrationModel = new RegistrationModel();
         let userModel = new UserModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token))
+        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.AESKey))
             .then((key) => { if (key !== event.parsedBody.identity) throw RestError('Registration token incorrect, please try again.', 401) })
             .then(() => registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType, token: event.pathParameters.token }).then((regs) => {
                 if (!regs || !regs[0] || !regs[0].identity) throw RestError('Registration token incorrect, please try again.', 401);

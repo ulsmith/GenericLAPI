@@ -1,6 +1,6 @@
 'use strict';
 
-const DataTools = require('../../Library/DataTools.js');
+const DataTools = require('../../../Library/DataTools.js');
 
 /**
  * @namespace API/View/Email

@@ -25,7 +25,7 @@ class Comms {
 	}
 	
 	/**
-	 * @public @static @name send
+	 * @public @name send
 	 * @description send smtp email
 	 * @param {String} s The string to hash
 	 * @return {String} A hash of the string
@@ -43,18 +43,18 @@ class Comms {
 	}
 
 	/**
-	 * @public @static @name send
+	 * @public @name send
 	 * @description send smtp email
 	 * @param {String} s The string to hash
 	 * @return {String} A hash of the string
 	 */
-	emailSend(to, from, subject, body, alt) {
+	emailSend(to, from, subject, body, alt, log) {
 		return new Promise((resolve, reject) => {
 			let message = { from: from, to: to, subject: subject, text: alt, html: body };
 			if (alt) message.text = alt;
 			
 			// dev mode dump out all emails
-			if (this.$environment.mode === 'development') console.log('<<< Email Out >>>', to, from, subject, body, alt);
+			if (process.env.Mode === 'development') console.log('<<< Email Out >>>', to, from, subject, body, alt);
 
 			this.comms.sendMail(message, (error, info) => {
 				if (error) return reject(error);
