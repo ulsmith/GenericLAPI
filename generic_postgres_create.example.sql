@@ -432,7 +432,9 @@ ALTER TABLE identity.user_role ADD CONSTRAINT user_role_user
 
 -- add config
 INSERT INTO "public"."configuration" ("key", "value")
-VALUES ('registration', '{"autoActivateUser": false, "emailAdminOnRegistrationCreated": false, "emailAdminOnRegistrationCompleted": false}');;
+VALUES
+('admin', '{"email": "p@ulsmith.net"}');;
+('registration', '{"autoActivateUser": false, "emailAdminRegistrationActivate": false, "emailAdminRegistrationCreated": false, "emailAdminRegistrationCompleted": false}');;
 
 -- add org
 INSERT INTO "identity"."organisation" ("name", "name_unique", "description")

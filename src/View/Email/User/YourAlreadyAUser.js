@@ -69,13 +69,13 @@ const YourAlreadyAUserText = (props) => DataTools.text`
 	
 	-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	
-	Thanks again for using ${props.systemName}!</p>
+	Thanks again for using ${props.systemName}!
 	
-	The ${props.systemName} Team.</p>
+	The ${props.systemName} Team.
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemName}</p>
+	${props.systemName}
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'
 `;

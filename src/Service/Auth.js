@@ -3,15 +3,9 @@
 const Service = require('../System/Service.js');
 const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
-const Comms = require('../Library/Comms.js');
 const UserModel = require('../Model/Identity/User.js');
 const UserAccountModel = require('../Model/Identity/UserAccount.js');
-const UserIdentityModel = require('../Model/Identity/UserIdentity.js');
-const RegistrationModel = require('../Model/Identity/Registration.js');
 const JWT = require('jsonwebtoken');
-const { PasswordResetHtml, PasswordResetText } = require('../View/Email/PasswordReset.js');
-const { YourAlreadyAUserHtml, YourAlreadyAUserText } = require('../View/Email/YourAlreadyAUser.js');
-const { RegistrationHtml, RegistrationText } = require('../View/Email/Registration.js');
 
 /**
  * @namespace API/Service

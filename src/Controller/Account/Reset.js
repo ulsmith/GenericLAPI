@@ -3,6 +3,11 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
+const Comms = require('../../Library/Comms.js');
+const UserModel = require('../../Model/Identity/User.js');
+const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
+const UserAccountModel = require('../../Model/Identity/UserAccount.js');
+const { PasswordResetHtml, PasswordResetText } = require('../View/Email/User/PasswordReset.js');
 
 /**
  * @namespace API/Controller/Account
@@ -85,8 +90,8 @@ class Reset extends Controller {
                     systemName: this.$environment.HostName,
                     systemUrl: this.$environment.HostAddress,
                     name: data[0].name,
-                    token: event.headers.Origin && event.parsedBody.route
-                        ? event.headers.Origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
+                    token: this.$client.origin && event.parsedBody.route
+                        ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
                         : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
                 };
 

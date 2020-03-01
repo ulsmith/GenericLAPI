@@ -59,6 +59,13 @@ class Model extends Core {
 	find(where) { return this.model.where(where) }
 
     /**
+     * @public @method all
+	 * @description all resources from a single table
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	all() { return this.model.where(true) }
+
+    /**
      * @public @method transaction
 	 * @description Proxy out the transaction method from knex to class
      * @param {Method} func The function to pass on

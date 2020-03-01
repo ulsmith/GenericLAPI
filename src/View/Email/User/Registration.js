@@ -55,7 +55,7 @@ const RegistrationText = (props) => DataTools.text`
 	Welcome!
 
 
-	This identity (email) just registered for an account at ${props.systemName} [${props.systemUrl}], so hi there!</p>
+	This identity (email) just registered for an account at ${props.systemName} [${props.systemUrl}], so hi there!
 	
 	If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.
 	
@@ -69,13 +69,13 @@ const RegistrationText = (props) => DataTools.text`
 	
 	-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	
-	Thanks again for using ${props.systemName}!</p>
+	Thanks again for using ${props.systemName}!
 	
-	The ${props.systemName} Team.</p>
+	The ${props.systemName} Team.
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemName}</p>
+	${props.systemName}
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'
 `;

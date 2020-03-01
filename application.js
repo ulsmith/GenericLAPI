@@ -4,10 +4,12 @@ var RestError = require('./src/System/RestError.js');
 
 var KnexService = require('./src/Service/Knex.js');
 var AuthService = require('./src/Service/Auth.js');
+var ConfigService = require('./src/Service/Config.js');
 
 var KnexMiddleware = require('./src/Middleware/Knex.js');
 var AuthMiddleware = require('./src/Middleware/Auth.js');
 var CorsMiddleware = require('./src/Middleware/Cors.js');
+var ConfigMiddleware = require('./src/Middleware/Config.js');
 
 /**
  * @namespace API
@@ -68,7 +70,8 @@ exports.handler = (event, context, callback) => {
 
 	process.__services = {
 		knex: new KnexService(),
-		auth: new AuthService()
+		auth: new AuthService(),
+		config: new ConfigService()
 	};
 
 	// start promise chain
@@ -76,6 +79,7 @@ exports.handler = (event, context, callback) => {
 
 	// incoming middleware, run synchronously as each one impacts on the next
 	.then(() => new AuthMiddleware().in(event, context))
+	.then(() => new ConfigMiddleware().in(event, context))
 	
 	// run controller and catch result
 	.then(() => new controller[name]()[event.httpMethod.toLowerCase()](event, context))

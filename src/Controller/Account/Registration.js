@@ -3,6 +3,14 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
+const UserModel = require('../../Model/Identity/User.js');
+const RegistrationModel = require('../../Model/Identity/Registration.js');
+const Comms = require('../../Library/Comms.js');
+const { YourAlreadyAUserHtml, YourAlreadyAUserText } = require('../../View/Email/User/YourAlreadyAUser.js');
+const { RegistrationHtml, RegistrationText } = require('../../View/Email/User/Registration.js');
+const { RegistrationActivateHtml, RegistrationActivateText } = require('../../View/Email/Admin/RegistrationActivate.js');
+const { RegistrationCompletedHtml, RegistrationCompletedText } = require('../../View/Email/Admin/RegistrationCompleted.js');
+const { RegistrationCreatedHtml, RegistrationCreatedText } = require('../../View/Email/Admin/RegistrationCreated.js');
 
 /**
  * @namespace API/Controller/Account
@@ -51,32 +59,17 @@ class Registration extends Controller {
         let userModel = new UserModel();
         let registrationModel = new RegistrationModel();
 
-        return userModel.getAuthedFromIdentity(event.parsedBody.identity, identityType)
+        return userModel.getAuthedFromIdentity(event.parsedBody.identity, event.parsedBody.identityType)
             .then((usr) => {
                 if (usr && usr.uuid) return usr;
 
-                return registrationModel.find({ identity: event.parsedBody.identity, identity_type: identityType })
+                return registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType })
                     .then((reg) => {
                         // already registered and under ten minutes, throw error
                         if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between registraion requests.', 401);
 
                         let token = Crypto.encodeToken(event.parsedBody.identity);
-                        // NOTE: [Paul remove me]
-                        // Setting, need to decide if email should go to me
-                        // Email, user has registered
-                        // Setting, how do we activate, auto or I do it
-                        // if auto, just add message to login page
-                        // EMail, if i need to activate, show them message saying wait for activation, should be email link to me which should show users data 
-                        // Email, if i activated, email them back when I have activated
 
-                        // move all user stuff out of auth and into controllers apart form auth stuff
-
-                        // need purge registration when moved over to user
-
-                        // need a admin screen for me to manager users
-                        // need a admin screen for me to purge registrations table
-
-                        console.log(token);
                         if (reg[0]) {
                             return registrationModel.update(reg[0].id, {
                                 password: Crypto.passwordHash(event.parsedBody.password),
@@ -89,7 +82,7 @@ class Registration extends Controller {
 
                         return registrationModel.insert({
                             identity: event.parsedBody.identity,
-                            identity_type: identityType,
+                            identity_type: event.parsedBody.identityType,
                             password: Crypto.passwordHash(event.parsedBody.password),
                             token: token,
                             token_sent: new Date(),
@@ -115,12 +108,19 @@ class Registration extends Controller {
 
                 if (data && data.uuid) {
                     emailData.name = data.name
-                    emailData.link = event.headers.Origin ? event.headers.Origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
+                    emailData.link = this.$client.origin ? this.$client.origin.replace(/^\/|\/$/g, '') : this.$environment.HostAddress;
                     return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
                 }
 
-                emailData.token = event.headers.Origin && event.parsedBody.route ? event.headers.Origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
+                emailData.token = this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
                 return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
+            })
+            .then(() => {
+                if (config.emailAdminRegistrationCreated) {
+                    // TODO: [Paul] config.email ... event.parsedBody.identity, event.parsedBody.identityType
+                    // email admin to say new user created, but waiting to verify, get eithe ractivate or completed once done
+                    console.log(1111111);
+                }
             })
             .then(() => 'Registration sent')
             .catch((error) => {
@@ -155,10 +155,30 @@ class Registration extends Controller {
             }))
             .then((reg) => userModel.add({
                 name: reg.identity,
+                active: this.$services.config.get('registration').autoActivateUser,
                 userIdentity: [{ identity: reg.identity, type: reg.identity_type }],
                 userAccount: { password: reg.password }
-            }))
-            .then(() => 'Registration verified successfully')
+            }).then(() => reg))
+            .then((reg) => registrationModel.delete(reg.id).then(() => reg))
+            .then((reg) => {
+                // TODO: [Paul]
+                let config = this.$services.config.get('admin');
+                
+                if (!config.autoActivateUser && config.emailAdminRegistrationActivate) {
+                    // email admin to activate... config.email
+                    console.log(1111);
+                }
+                
+                if (config.emailAdminRegistrationCompleted) {
+                    // email admin to say completed, but dont if needs activating as that is completing...  config.email
+                    console.log(2222);
+                }
+            })
+            .then(() => (
+                this.$services.config.get('registration').autoActivateUser
+                ? { body: 'Registration verified, user is now active', statusCode: 201 }
+                : { body: 'Registration verified, user requires activation by admin', statusCode: 200 }
+            ))
             .catch((error) => {
                 if (error.name === 'RestError') throw error;
                 else if (error.name === 'TokenExpiredError') throw new RestError('Registration token expired', 401);

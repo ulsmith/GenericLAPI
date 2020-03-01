@@ -57,11 +57,11 @@ const PasswordResetText = (props) => DataTools.text`
 
 	We have had a password reset request come through for your account on ${props.systemName} [${props.systemUrl}]
 	
-	If this was not you that requested this, you may ignore this message; password requests expire after ten minutes so don't panic, your all secure.</p>
+	If this was not you that requested this, you may ignore this message; password requests expire after ten minutes so don't panic, your all secure.
 	
-	If you did make this request, great; simply use the button below to to access our system and change your password.</p>
+	If you did make this request, great; simply use the button below to to access our system and change your password.
 	
-	Its always a good idea to check the domain password reset point you to, make sure it matches the website when others send you requests!</p>
+	Its always a good idea to check the domain password reset point you to, make sure it matches the website when others send you requests!
 	
 	-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	
@@ -69,13 +69,13 @@ const PasswordResetText = (props) => DataTools.text`
 	
 	-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	
-	Thanks again for using ${props.systemName}!</p>
+	Thanks again for using ${props.systemName}!
 	
-	The ${props.systemName} Team.</p>
+	The ${props.systemName} Team.
 	
 	.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.
 	
-	${props.systemName}</p>
+	${props.systemName}
 	
 	'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'-.-'
 `;
