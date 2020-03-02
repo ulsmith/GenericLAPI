@@ -118,9 +118,14 @@ class Registration extends Controller {
             .then(() => {
                 let config = this.$services.config.get('admin');
                 if (config.emailAdminRegistrationCreated) {
-                    // TODO: [Paul] config.email ... event.parsedBody.identity, event.parsedBody.identityType
-                    // email admin to say new user created, but waiting to verify, get eithe ractivate or completed once done
-                    console.log(1111111);
+                    let emailData = { 
+                        systemName: this.$environment.HostName, 
+                        systemUrl: this.$environment.HostAddress,
+                        identity: event.parsedBody.identity,
+                        identityType: event.parsedBody.identityType
+                    };
+
+                    return comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Created', RegistrationCreatedHtml(emailData), RegistrationCreatedText(emailData));
                 }
             })
             .then(() => 'Registration sent')
@@ -162,17 +167,33 @@ class Registration extends Controller {
             }).then(() => reg))
             .then((reg) => registrationModel.delete(reg.id).then(() => reg))
             .then((reg) => {
-                // TODO: [Paul]
+                // send email out
+                let comms = new Comms();
                 let config = this.$services.config.get('admin');
-                
+
                 if (!config.autoActivateUser && config.emailAdminRegistrationActivate) {
-                    // email admin to activate... config.email
-                    console.log(1111);
+                    let data = Crypto.encodeToken(config.email, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
+
+                    let emailData = {
+                        systemName: this.$environment.HostName,
+                        systemUrl: this.$environment.HostAddress,
+                        identity: reg.identity,
+                        identityType: reg.identity_type,
+                        token: this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
+                    };
+
+                    return comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));
                 }
                 
-                if (config.emailAdminRegistrationCompleted) {
-                    // email admin to say completed, but dont if needs activating as that is completing...  config.email
-                    console.log(2222);
+                if (config.emailAdminRegistrationCompleted) { 
+                    let emailData = {
+                        systemName: this.$environment.HostName,
+                        systemUrl: this.$environment.HostAddress,
+                        identity: event.parsedBody.identity,
+                        identityType: event.parsedBody.identityType
+                    };
+
+                    return comms.emailSend(reg.identity, this.$environment.EmailFrom, 'Registration Completed', RegistrationCompletedHtml(emailData), RegistrationCompletedText(emailData));
                 }
             })
             .then(() => (

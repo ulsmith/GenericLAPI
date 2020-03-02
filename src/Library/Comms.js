@@ -48,7 +48,7 @@ class Comms {
 	 * @param {String} s The string to hash
 	 * @return {String} A hash of the string
 	 */
-	emailSend(to, from, subject, body, alt, log) {
+	emailSend(to, from, subject, body, alt) {
 		return new Promise((resolve, reject) => {
 			let message = { from: from, to: to, subject: subject, text: alt, html: body };
 			if (alt) message.text = alt;
