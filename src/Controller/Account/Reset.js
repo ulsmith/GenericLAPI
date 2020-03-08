@@ -7,7 +7,7 @@ const Comms = require('../../Library/Comms.js');
 const UserModel = require('../../Model/Identity/User.js');
 const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
 const UserAccountModel = require('../../Model/Identity/UserAccount.js');
-const { PasswordResetHtml, PasswordResetText } = require('../View/Email/User/PasswordReset.js');
+const { PasswordResetHtml, PasswordResetText } = require('../../View/Email/User/PasswordReset.js');
 
 /**
  * @namespace API/Controller/Account
@@ -63,13 +63,13 @@ class Reset extends Controller {
                 // check user is active
                 if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
                 // Need to flood prevent here too
-                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between reset requests.', 401);
+                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between password reset requests.', 401);
 
                 return usr;
             })
             .then((usr) => {
                 return userAccount.update(usr.id, {
-                    password_reminder: Crypto.encodeToken(usr.uuid),
+                    password_reminder: Crypto.encodeToken(usr.uuid, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey),
                     password_reminder_sent: new Date()
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
             })
@@ -89,6 +89,7 @@ class Reset extends Controller {
                 let emailData = {
                     systemName: this.$environment.HostName,
                     systemUrl: this.$environment.HostAddress,
+                    expireTime: this.$environment.TokenExpireSeconds,
                     name: data[0].name,
                     token: this.$client.origin && event.parsedBody.route
                         ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
@@ -119,13 +120,17 @@ class Reset extends Controller {
         let userIdentity = new UserIdentityModel();
         let userAccount = new UserAccountModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token))
+        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
             .then((uuid) => userModel.getAuthedFromUUID(uuid))
             .then((usr) => userIdentity.find({ user_id: usr.id, identity: event.parsedBody.identity, type: event.parsedBody.identityType }))
             .then((usr) => {
                 if (usr[0].identity !== event.parsedBody.identity) throw new RestError('Reset details incorrect, please try again.', 401)
-                return userAccount.update({ user_id: usr[0].user_id }, { password: Crypto.passwordHash(event.parsedBody.password) })
-            }).then(() => 'Password reset successfully')
+                return userAccount.update({ user_id: usr[0].user_id, password_reminder: event.pathParameters.token }, { password: Crypto.passwordHash(event.parsedBody.password), password_reminder: null, password_reminder_sent: null })
+            })
+            .then((updated) => {
+                if (updated.length === 0) throw Error('Only use token once');
+            })
+            .then(() => 'Password reset successfully')
             .catch((error) => {
                 if (error.name === 'TokenExpiredError') throw new RestError('Password reset token expired', 401);
                 throw new RestError('Password reset failed', 400);

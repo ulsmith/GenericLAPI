@@ -30,8 +30,8 @@ const PasswordResetHtml = (props) => DataTools.html`
 	</div>
 	<div class="main">
 		<p>We have had a password reset request come through for your account on <strong><a href="${props.systemUrl}">${props.systemName}</a></strong></p>
-		<p>If this was not you that requested this, you may ignore this message; password requests expire after ten minutes so don't panic, your all secure.</p>
-		<p>If you did make this request, great; simply use the button below to to access our system and change your password.</p>
+		<p>If this was not you that requested this, you may ignore this message; password requests expire after ${props.expireTime} minutes so don't panic, your all secure.</p>
+		<p>If you did make this request, great; simply use the button below to access our system and change your password.</p>
 		<p>Its always a good idea to check the domain password reset point you to, make sure it matches the website when others send you requests!</p>
 		<p class="text-center"><a href="${props.token}" class="text-button">Reset your Passsword</a></p>
 		<p class="text-center text-link">${props.token}</p>
@@ -59,7 +59,7 @@ const PasswordResetText = (props) => DataTools.text`
 	
 	If this was not you that requested this, you may ignore this message; password requests expire after ten minutes so don't panic, your all secure.
 	
-	If you did make this request, great; simply use the button below to to access our system and change your password.
+	If you did make this request, great; simply use the button below to access our system and change your password.
 	
 	Its always a good idea to check the domain password reset point you to, make sure it matches the website when others send you requests!
 	

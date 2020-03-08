@@ -30,7 +30,7 @@ const YourAlreadyAUserHtml = (props) => DataTools.html`
 	</div>
 	<div class="main">
 		<p>You just tried to create an account at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, but your already a member.</p>
-		<p>If this was not you that requested this, you may ignore this message; new registrations expire after automatically.</p>
+		<p>If this was not you that requested this, you may ignore this message; new registrations expire after ${props.expireTime} minutes automatically.</p>
 		<p>If you did make this request, thats good too, but you just need to go to the website and log in.</p>
 		<p>To reset your password, in the event you forgot it, just click the link in the login screen and add your identity, we will then send it to you via this means.</p>
 		<p class="text-center"><a href="${props.link}" class="text-button">${props.systemName}</a></p>

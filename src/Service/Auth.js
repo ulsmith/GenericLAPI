@@ -87,7 +87,7 @@ class Auth extends Service {
 						userOrgs.user.identityType = identityType;
 
 						let result = { 
-							token: this.generateJWT(userOrgs.user, org, userAgent),
+							token: this._generateJWT(userOrgs.user, org, userAgent),
 							user: {
 								uuid: userOrgs.user.uuid,
 								name: userOrgs.user.name,
@@ -124,7 +124,7 @@ class Auth extends Service {
 		let jwt = authorization.replace('Bearer', '').trim();
 
 		try {
-			payload = this.verifyJWT(jwt);
+			payload = this._verifyJWT(jwt);
 		} catch(error) {
 			if (error.name === 'TokenExpiredError') {
 				throw new RestError({ 
@@ -199,10 +199,10 @@ class Auth extends Service {
 
 		try {
 			// if verified, just refresh anyway
-			if (this.verifyJWT(jwt)) return this.refreshJWT(jwt);
+			if (this._verifyJWT(jwt)) return this._refreshJWT(jwt);
 		} catch (error) {
 			// if expired, refresh
-			if (error.name === 'TokenExpiredError') return this.refreshJWT(jwt);
+			if (error.name === 'TokenExpiredError') return this._refreshJWT(jwt);
 
 			throw new RestError({
 				message: 'Authorization failed, please log in to authorize.',

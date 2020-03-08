@@ -30,7 +30,7 @@ const RegistrationHtml = (props) => DataTools.html`
 	</div>
 	<div class="main">
 		<p>This identity (email) just registered for an account at <strong><a href="${props.systemUrl}">${props.systemName}</a></strong>, so hi there!</p>
-		<p>If this was not you that requested this, you may ignore this message; new registrations expire after 10min.</p>
+		<p>If this was not you that requested this, you may ignore this message; new registrations expire after ${props.expireTime} minutes.</p>
 		<p>If you keep getting these emails, someone is trying to register your email on our system.</p>
 		<p>If you did make this request, thats great, we just need you to verify your identity by clicking the link to confirm.</p>
 		<p class="text-center"><a href="${props.token}" class="text-button">Verify your Email</a></p>
@@ -57,7 +57,7 @@ const RegistrationText = (props) => DataTools.text`
 
 	This identity (email) just registered for an account at ${props.systemName} [${props.systemUrl}], so hi there!
 	
-	If this was not you that requested this, you may ignore this message; new registrations expire after 24hours.
+	If this was not you that requested this, you may ignore this message; new registrations expire after ${props.expireTime} minutes.
 	
 	If you keep getting these emails, someone is trying to register your email on our system.
 	

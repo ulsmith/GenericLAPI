@@ -336,9 +336,9 @@ class Crypto {
      * @param {String} token The token to decode
      * @return {String} The key from in the token
      */
-	static decodeToken(token, AESKey) {
-		token = Crypto.decryptAES256CBC(token, this.$environment.AESKey);
-		if (!this.verifyJWT(token)) throw RestError({ message: 'Unable to verify reset key' }, 401);
+	static decodeToken(token, JWTKey, AESKey) {
+		token = Crypto.decryptAES256CBC(token, AESKey);
+		if (!JWT.verify(token, JWTKey, { algorithm: 'HS256' })) throw RestError({ message: 'Unable to verify reset key' }, 401);
 		let decoded = JWT.decode(token, { complete: true });
 		return decoded.payload.key;
 	}

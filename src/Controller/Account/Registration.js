@@ -104,7 +104,7 @@ class Registration extends Controller {
                     this.$environment.EmailPassword
                 );
 
-                let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress }
+                let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress, expireTime: this.$environment.TokenExpireSeconds }
 
                 if (data && data.uuid) {
                     emailData.name = data.name
@@ -149,7 +149,7 @@ class Registration extends Controller {
         let registrationModel = new RegistrationModel();
         let userModel = new UserModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.AESKey))
+        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
             .then((key) => { if (key !== event.parsedBody.identity) throw RestError('Registration token incorrect, please try again.', 401) })
             .then(() => registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType, token: event.pathParameters.token }).then((regs) => {
                 if (!regs || !regs[0] || !regs[0].identity) throw RestError('Registration token incorrect, please try again.', 401);
