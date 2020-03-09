@@ -198,8 +198,8 @@ class Registration extends Controller {
             })
             .then(() => (
                 this.$services.config.get('registration').autoActivateUser
-                ? { body: 'Registration verified, user is now active', statusCode: 201 }
-                : { body: 'Registration verified, user requires activation by admin', statusCode: 200 }
+                ? { body: JSON.stringify({ message: 'Registration verified, please log in' }), statusCode: 201 }
+                : { body: JSON.stringify({ message: 'Registration verified, user requires activation by admin' }), statusCode: 200 }
             ))
             .catch((error) => {
                 if (error.name === 'RestError') throw error;
