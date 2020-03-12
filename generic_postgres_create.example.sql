@@ -433,7 +433,7 @@ ALTER TABLE identity.user_role ADD CONSTRAINT user_role_user
 -- add config
 INSERT INTO "public"."configuration" ("key", "value")
 VALUES
-('admin', '{"email": "p@ulsmith.net"}');;
+('admin', '{"email": "p@ulsmith.net"}'),
 ('registration', '{"autoActivateUser": false, "emailAdminRegistrationActivate": false, "emailAdminRegistrationCreated": false, "emailAdminRegistrationCompleted": false}');;
 
 -- add org
@@ -460,31 +460,24 @@ VALUES (1, 'a395192e5666da4839ebcaa8ef903083848d7a7d50a29d65b5ee48a5e0bbfa9e635b
 
 -- add a super admin group
 INSERT INTO "identity"."group" ("name", "name_unique", "description")
-VALUES ('Administrator (Super)', 'administrator.super', 'Full read, write, delete access to entire system, regardless of organisation, department or any other. A.K.A. GOD!');
+VALUES 
+('Administrator (Super)', 'administrator.super', 'Full read, write, delete access to entire system, regardless of organisation, department or any other. A.K.A. GOD!'),
+('Basic User', 'user.basic', 'Limited access to the bare minimum needed, to log in and access things like account.');
 
 -- role for login access/auth
 INSERT INTO "identity"."role" ("name", "name_unique", "description")
 VALUES 
-('API access to endpoint xyz', 'api.controller.xyz', 'API access to a specific endpoint.'),
-('API access to endpoint 123', 'api.controller.123', 'API access to a specific endpoint.'),
-('UI access to page ABC', 'ui.route.abc', 'UI access to a specific page.'),
-('UI access to page 123', 'ui.route.123', 'UI access to a specific page.');
+('API access to your user account', 'api.identity.user', 'API access to your own user account.'),
+('UI access to user account route', 'ui.route.account', 'UI access to the account route for accessing your account.');
 
 -- apply permissions to the group
 INSERT INTO "identity"."group_role" ("group_id", "role_id", "read", "write", "delete")
 VALUES 
-(1, 1, true, true, true),
-(1, 2, true, true, true),
-(1, 3, true, true, true),
-(1, 4, true, true, true);
+(2, 1, true, true, true),
+(2, 2, true, true, true);
 
--- assign group to the department
-INSERT INTO "identity"."department_group" ("group_id", "department_id", "department_organisation_id")
-VALUES (1, 1, 1);
-
--- add me to the department.
-INSERT INTO "identity"."user_department" ("user_id", "department_id", "department_organisation_id")
-VALUES (1, 1, 1);;
+-- assign user to basic group
+INSERT INTO "identity"."user_group" ("user_id", "group_id")
+VALUES (1, 2);
 
 -- End of file.
-
