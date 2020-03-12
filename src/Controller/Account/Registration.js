@@ -29,6 +29,16 @@ class Registration extends Controller {
 	 */
     constructor() {
         super();
+
+        // send email out
+        this.comms = new Comms();
+        this.comms.emailConfigure(
+            this.$environment.EmailHost,
+            this.$environment.EmailPort,
+            this.$environment.EmailSecureWithTls,
+            this.$environment.EmailUsername,
+            this.$environment.EmailPassword
+        );
     }
 
 	/**
@@ -92,18 +102,6 @@ class Registration extends Controller {
                     })
             })
             .then((data) => {
-                // send email out
-                let comms = new Comms();
-
-                // configure
-                comms.emailConfigure(
-                    this.$environment.EmailHost,
-                    this.$environment.EmailPort,
-                    this.$environment.EmailSecureWithTls,
-                    this.$environment.EmailUsername,
-                    this.$environment.EmailPassword
-                );
-
                 let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress, expireTime: this.$environment.TokenExpireSeconds }
 
                 if (data && data.uuid) {
@@ -113,23 +111,23 @@ class Registration extends Controller {
                 }
                 
                 emailData.token = this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
-                return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
+                return this.comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
             })
-            .then(() => {
-                let config = this.$services.config.get('admin');
-                if (config.emailAdminRegistrationCreated) {
+            .then(() => {             
+                if (this.$services.config.get('registration').emailAdminRegistrationCreated) {
                     let emailData = { 
                         systemName: this.$environment.HostName, 
                         systemUrl: this.$environment.HostAddress,
                         identity: event.parsedBody.identity,
                         identityType: event.parsedBody.identityType
                     };
-
-                    return comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Created', RegistrationCreatedHtml(emailData), RegistrationCreatedText(emailData));
+                    
+                    return this.comms.emailSend(this.$services.config.get('admin').email, this.$environment.EmailFrom, 'Registration Created', RegistrationCreatedHtml(emailData), RegistrationCreatedText(emailData));
                 }
             })
             .then(() => 'Registration sent')
             .catch((error) => {
+                console.log(error);
                 if (error.name === 'RestError') throw error;
                 throw new RestError('Could not send registration', 400);
             });
@@ -168,11 +166,10 @@ class Registration extends Controller {
             .then((reg) => registrationModel.delete(reg.id).then(() => reg))
             .then((reg) => {
                 // send email out
-                let comms = new Comms();
-                let config = this.$services.config.get('admin');
+                let configAdmin = this.$services.config.get('admin');
 
-                if (!config.autoActivateUser && config.emailAdminRegistrationActivate) {
-                    let data = Crypto.encodeToken(config.email, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
+                if (!configAdmin.autoActivateUser && configAdmin.emailAdminRegistrationActivate) {
+                    let data = Crypto.encodeToken(this.$services.config.get('registration').email, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
 
                     let emailData = {
                         systemName: this.$environment.HostName,
@@ -182,10 +179,10 @@ class Registration extends Controller {
                         token: this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
                     };
 
-                    return comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));
+                    return this.comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));
                 }
                 
-                if (config.emailAdminRegistrationCompleted) { 
+                if (configAdmin.emailAdminRegistrationCompleted) { 
                     let emailData = {
                         systemName: this.$environment.HostName,
                         systemUrl: this.$environment.HostAddress,
@@ -193,7 +190,7 @@ class Registration extends Controller {
                         identityType: event.parsedBody.identityType
                     };
 
-                    return comms.emailSend(reg.identity, this.$environment.EmailFrom, 'Registration Completed', RegistrationCompletedHtml(emailData), RegistrationCompletedText(emailData));
+                    return this.comms.emailSend(reg.identity, this.$environment.EmailFrom, 'Registration Completed', RegistrationCompletedHtml(emailData), RegistrationCompletedText(emailData));
                 }
             })
             .then(() => (
