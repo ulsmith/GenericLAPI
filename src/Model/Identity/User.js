@@ -267,8 +267,6 @@ class User extends Model {
 	 * ORDER BY "role"."name_unique" ASC;
      */
 	getAllPermisions(userID, organisationID) {
-		console.log(999);
-		
 		return this.db
 			.select(
 				'role.name_unique AS role',
@@ -286,12 +284,7 @@ class User extends Model {
 			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
 			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
 			.groupBy('role.name_unique')
-			.orderBy('role.name_unique', 'ASC')
-			.then((data) => {
-				console.log(456, data);
-				return data;
-			})
-			;
+			.orderBy('role.name_unique', 'ASC');
 	}
 
     /**
