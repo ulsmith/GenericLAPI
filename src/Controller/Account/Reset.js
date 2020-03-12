@@ -26,6 +26,16 @@ class Reset extends Controller {
 	 */
     constructor() {
         super();
+        
+        // send email out
+        this.comms = new Comms();
+        this.comms.emailConfigure(
+            this.$environment.EmailHost,
+            this.$environment.EmailPort,
+            this.$environment.EmailSecureWithTls,
+            this.$environment.EmailUsername,
+            this.$environment.EmailPassword
+        );
     }
 
 	/**
@@ -74,18 +84,6 @@ class Reset extends Controller {
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
             })
             .then((data) => {
-                // send email out
-                let comms = new Comms();
-
-                // configure
-                comms.emailConfigure(
-                    this.$environment.EmailHost,
-                    this.$environment.EmailPort,
-                    this.$environment.EmailSecureWithTls,
-                    this.$environment.EmailUsername,
-                    this.$environment.EmailPassword
-                );
-
                 let emailData = {
                     systemName: this.$environment.HostName,
                     systemUrl: this.$environment.HostAddress,
@@ -96,7 +94,7 @@ class Reset extends Controller {
                         : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
                 };
 
-                return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
+                return this.comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
             })
             .then(() => 'Password reset')
             .catch((error) => {
