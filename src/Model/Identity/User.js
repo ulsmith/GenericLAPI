@@ -3,6 +3,7 @@
 const Model = require('../../System/Model.js');
 const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
 const UserAccountModel = require('../../Model/Identity/UserAccount.js');
+const UserGroupModel = require('../../Model/Identity/UserGroup.js');
 const SystemError = require('../../System/SystemError.js');
 const Crypto = require('../../Library/Crypto.js');
 
@@ -407,6 +408,7 @@ class User extends Model {
 	add(data) {
 		let userIdentity = new UserIdentityModel();
 		let userAccount = new UserAccountModel();
+		let userGroup = new UserGroupModel();
 		let uMapped, uiMapped, uaMapped;
 		
 		return Promise.resolve().then(() => {
@@ -449,19 +451,12 @@ class User extends Model {
 						return usr;
 					})
 					.then((usr) => {
-						console.log('user added', id);
-						throw Error('Boink!');
-						// add user to default group so they have bare bones permissions 
-						// if (uaMapped) {
-						// 	uaMapped.user_id = usr.id;
-						// 	return userAccount.transactInsert(trx, uaMapped)
-						// 		.then(() => usr)
-						// 		.catch((error) => {
-						// 			throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
-						// 		});
-						// }
-
-						return usr;
+						// add new user to basic user group on default DB setup
+						return userGroup.transactInsert(trx, { user_id: usr.id, group_id: this.$environment.UserBasicUserGroupId })
+							.then(() => usr)
+							.catch((error) => {
+								throw new SystemError('Invalid data, could not add record');
+							});
 					})
 					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
 					.then(trx.commit)
