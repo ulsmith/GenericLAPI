@@ -79,7 +79,7 @@ class Reset extends Controller {
             })
             .then((usr) => {
                 return userAccount.update(usr.id, {
-                    password_reminder: Crypto.encodeToken(usr.uuid, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey),
+                    password_reminder: Crypto.encodeToken('reset', usr.uuid, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey),
                     password_reminder_sent: new Date()
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
             })
@@ -89,8 +89,8 @@ class Reset extends Controller {
                     systemUrl: this.$environment.HostAddress,
                     expireTime: this.$environment.TokenExpireSeconds,
                     name: data[0].name,
-                    token: this.$client.origin && event.parsedBody.route
-                        ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
+                    token: this.$client.origin && event.parsedBody.resetRoute
+                        ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.resetRoute.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
                         : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
                 };
 
@@ -118,7 +118,7 @@ class Reset extends Controller {
         let userIdentity = new UserIdentityModel();
         let userAccount = new UserAccountModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
+        return Promise.resolve().then(() => Crypto.decodeToken('reset', event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
             .then((uuid) => userModel.getAuthedFromUUID(uuid))
             .then((usr) => userIdentity.find({ user_id: usr.id, identity: event.parsedBody.identity, type: event.parsedBody.identityType }))
             .then((usr) => {

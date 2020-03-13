@@ -319,14 +319,15 @@ class Crypto {
      * @param {String} key The key to hide in the token
      * @return {String} Encrypted JWT token
      */
-	static encodeToken(key, host, origin, expire, JWTKey, AESKey) {
+	static encodeToken(scope, key, host, origin, expire, JWTKey, AESKey) {
 		return Crypto.encryptAES256CBC(JWT.sign({
 			iss: host,
 			aud: origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(expire),
-			key: key
+			key: key,
+			scope: scope
 		}, JWTKey, { algorithm: 'HS256' }), AESKey);
 	}
 
@@ -336,10 +337,12 @@ class Crypto {
      * @param {String} token The token to decode
      * @return {String} The key from in the token
      */
-	static decodeToken(token, JWTKey, AESKey) {
+	static decodeToken(scope, token, JWTKey, AESKey) {
 		token = Crypto.decryptAES256CBC(token, AESKey);
-		if (!JWT.verify(token, JWTKey, { algorithm: 'HS256' })) throw RestError({ message: 'Unable to verify reset key' }, 401);
+		if (!JWT.verify(token, JWTKey, { algorithm: 'HS256' })) throw Error('Unable to verify token');
 		let decoded = JWT.decode(token, { complete: true });
+		if (decoded.payload.scope !== scope) throw Error('Unable to verify token scope');
+		console.log(333, decoded.payload)
 		return decoded.payload.key;
 	}
 }

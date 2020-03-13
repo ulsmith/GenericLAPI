@@ -78,7 +78,15 @@ class Registration extends Controller {
                         // already registered and under ten minutes, throw error
                         if (reg[0] && reg[0].token_sent && (Date.now() - (new Date(reg[0].token_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between registraion requests.', 401);
                         
-                        let token = Crypto.encodeToken(event.parsedBody.identity, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
+                        let token = Crypto.encodeToken(
+                            'registration', 
+                            event.parsedBody.identity, 
+                            this.$environment.HostAddress, 
+                            this.$client.origin, 
+                            this.$environment.TokenExpireSeconds, 
+                            this.$environment.JWTKey, 
+                            this.$environment.AESKey
+                        );
                    
                         if (reg[0]) {
                             return registrationModel.update(reg[0].id, {
@@ -110,7 +118,7 @@ class Registration extends Controller {
                     return comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
                 }
                 
-                emailData.token = this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
+                emailData.token = this.$client.origin && event.parsedBody.registerRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.registerRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
                 return this.comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
             })
             .then(() => {             
@@ -147,7 +155,7 @@ class Registration extends Controller {
         let registrationModel = new RegistrationModel();
         let userModel = new UserModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken(event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
+        return Promise.resolve().then(() => Crypto.decodeToken('registration', event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
             .then((key) => { if (key !== event.parsedBody.identity) throw RestError('Registration token incorrect, please try again.', 401) })
             .then(() => registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType, token: event.pathParameters.token }).then((regs) => {
                 if (!regs || !regs[0] || !regs[0].identity) throw RestError('Registration token incorrect, please try again.', 401);
@@ -167,22 +175,23 @@ class Registration extends Controller {
             .then((reg) => {
                 // send email out
                 let configAdmin = this.$services.config.get('admin');
+                let configReg = this.$services.config.get('registration');
 
-                if (!configAdmin.autoActivateUser && configAdmin.emailAdminRegistrationActivate) {
-                    let data = Crypto.encodeToken(this.$services.config.get('registration').email, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
+                if (!configReg.autoActivateUser && configReg.emailAdminRegistrationActivate) {
+                    let data = Crypto.encodeToken('activate', reg.identity, this.$environment.HostAddress, this.$client.origin, this.$environment.ActivateExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey);
 
                     let emailData = {
                         systemName: this.$environment.HostName,
                         systemUrl: this.$environment.HostAddress,
                         identity: reg.identity,
                         identityType: reg.identity_type,
-                        token: this.$client.origin && event.parsedBody.route ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.route.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
+                        token: this.$client.origin && event.parsedBody.activateRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.activateRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HostAddress + '/account/register/' + data
                     };
 
-                    return this.comms.emailSend(config.email, this.$environment.EmailFrom, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));
+                    return this.comms.emailSend(configAdmin.email, this.$environment.EmailFrom, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));
                 }
                 
-                if (configAdmin.emailAdminRegistrationCompleted) { 
+                if (configReg.emailAdminRegistrationCompleted) { 
                     let emailData = {
                         systemName: this.$environment.HostName,
                         systemUrl: this.$environment.HostAddress,
