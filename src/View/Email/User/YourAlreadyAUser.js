@@ -57,7 +57,7 @@ const YourAlreadyAUserText = (props) => DataTools.text`
 
 	You just tried to create an account at ${props.systemName} [${props.systemUrl}], but your already a member.
 	
-	If this was not you that requested this, you may ignore this message; new registrations expire automatically.
+	If this was not you that requested this, you may ignore this message; new registrations expire after ${props.expireTime} minutes automatically.
 	
 	If you did make this request, thats good too, but you just need to go to the website and log in.
 	

@@ -73,7 +73,7 @@ class Reset extends Controller {
                 // check user is active
                 if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
                 // Need to flood prevent here too
-                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < parseInt(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between password reset requests.', 401);
+                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < Number(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between password reset requests.', 401);
 
                 return usr;
             })
@@ -87,7 +87,7 @@ class Reset extends Controller {
                 let emailData = {
                     systemName: this.$environment.HostName,
                     systemUrl: this.$environment.HostAddress,
-                    expireTime: this.$environment.TokenExpireSeconds,
+                    expireTime: Number(this.$environment.TokenExpireSeconds) / 60,
                     name: data[0].name,
                     token: this.$client.origin && event.parsedBody.resetRoute
                         ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.resetRoute.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder

@@ -57,7 +57,7 @@ const PasswordResetText = (props) => DataTools.text`
 
 	We have had a password reset request come through for your account on ${props.systemName} [${props.systemUrl}]
 	
-	If this was not you that requested this, you may ignore this message; password requests expire after ten minutes so don't panic, your all secure.
+	If this was not you that requested this, you may ignore this message; password requests expire after ${props.expireTime} minutes so don't panic, your all secure.
 	
 	If you did make this request, great; simply use the button below to access our system and change your password.
 	

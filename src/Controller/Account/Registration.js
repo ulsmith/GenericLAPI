@@ -110,7 +110,7 @@ class Registration extends Controller {
                     })
             })
             .then((data) => {
-                let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress, expireTime: this.$environment.TokenExpireSeconds }
+                let emailData = { systemName: this.$environment.HostName, systemUrl: this.$environment.HostAddress, expireTime: Number(this.$environment.TokenExpireSeconds) / 60 }
 
                 if (data && data.uuid) {
                     emailData.name = data.name
