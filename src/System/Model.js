@@ -177,9 +177,8 @@ class Model extends Core {
 		}
 
 		// empty
-		if (Object.keys(clean).length < 1) throw new SystemError('Invalid data, must have at least one property in [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
-		
-		return clean;
+		if (!partial && Object.keys(clean).length < 1) throw new SystemError('Invalid data, must have at least one property in [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
+		return Object.keys(clean).length > 0 ? clean : undefined;
 	}
 
     /**

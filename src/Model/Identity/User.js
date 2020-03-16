@@ -485,13 +485,14 @@ class User extends Model {
 			uaMapped = userAccount.mapDataToColumn(data.userAccount, partial);
 
 			// to edit password you must have current password too
-			if (!!data.password && !data.currentPassword) throw new SystemError('Must include current password when changing password');
+			if (uaMapped && uaMapped.password !== undefined && uaMapped.password.length < 1) throw new RestError('Password cannot be empty', 400);
+			if (uaMapped && !!uaMapped.password && (!data.userAccount || !data.userAccount.currentPassword)) throw new SystemError('Must include current password when changing password');
 		})
 		.then(() => {
-			if (data.password === undefined) return;
+			if (!uaMapped || uaMapped.password === undefined) return;
 			return userAccount.get(id).then((usracc) => {
-				if (usracc.password !== Crypto.passwordHash(uaMapped.currentPassword, usracc.password.substring(0, usracc.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
-			})
+				if (usracc.password !== Crypto.passwordHash(data.userAccount.currentPassword, usracc.password.substring(0, usracc.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
+			});
 		})
 		.catch((error) => {
 			// manage error, parse and re-throw
@@ -513,8 +514,14 @@ class User extends Model {
 		}).then(() => {
 			// perform edit user, identities and account data, rollback on failure
 			return this.transaction((trx) => {
-				return this.transactUpdate(trx, id, uMapped, '*')
-					.then((usrs) => {
+				return Promise.resolve()
+					.then(() => {
+						console.log('u', uMapped);
+						if (uMapped) return this.transactUpdate(trx, id, uMapped, '*')[0];
+						console.log('p');
+						return this.get(id);
+					})
+					.then((usr) => {
 						// update identities attached to this user
 						if (uiMapped && uiMapped.length > 0) {
 							let identities = [];
@@ -539,11 +546,12 @@ class User extends Model {
 								});
 						}
 
-						return usrs[0];
+						return usr;
 					})
 					.then((usr) => {
-						// insert to account, only need to use user id here as 1 to 1 table. dont return anything
+						// update account, only need to use user id here as 1 to 1 table. dont return anything
 						if (uaMapped) {
+							uaMapped.password = Crypto.passwordHash(uaMapped.password);
 							return userAccount.transactUpdate(trx, { user_id: id }, uaMapped)
 								.then(() => usr)
 								.catch((error) => {
