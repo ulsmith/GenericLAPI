@@ -45,7 +45,7 @@ class UserAccount extends Controller {
 				uaMapped.password = Crypto.passwordHash(uaMapped.password);
 
 				// to edit password you must have current password too
-				if (!!event.parsedBody.password && !event.parsedBody.currentPassword) throw new RestError('Must include current password when changing password', 400);
+				if (!event.parsedBody.password || !event.parsedBody.currentPassword) throw new RestError('Must include current password and new password', 400);
 			})
 			.then(() => userAccount.getFromUUID(event.pathParameters.uuid).then((usracc) => {
 				if (!usracc || !usracc.id) throw new RestError({ message: 'Could not find resource for UUID provided' }, 404);

@@ -487,9 +487,12 @@ class User extends Model {
 			// to edit password you must have current password too
 			if (!!data.password && !data.currentPassword) throw new SystemError('Must include current password when changing password');
 		})
-		.then(() => userIdentity.get(id).then((usridt) => {
-			if (usridt.password !== Crypto.passwordHash(uaMapped.currentPassword, usridt.password.substring(0, usridt.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
-		}))
+		.then(() => {
+			if (data.password === undefined) return;
+			return userAccount.get(id).then((usracc) => {
+				if (usracc.password !== Crypto.passwordHash(uaMapped.currentPassword, usracc.password.substring(0, usracc.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
+			})
+		})
 		.catch((error) => {
 			// manage error, parse and re-throw
 			if (error.name === 'SystemError') throw new SystemError(error.message, {
