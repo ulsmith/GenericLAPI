@@ -54,7 +54,7 @@ exports.handler = (event, context, callback) => {
     try {
 		controller[name] = require('./src/Controller/' + path);
 		event.controller = { path: './src/Controller/' + path, name: name, access: controller[name][event.httpMethod.toLowerCase()]};
-		if (event.pathParameters.error) return callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('405 Method not allowed [' + event.httpMethod.toUpperCase() + ']') });
+		if (event.pathParameters.error) return callback(null, { statusCode: 405, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('406 route based parameter/s missing') });
 	} catch (error) {
 		if (process.env.Mode === 'development') console.log(error);
         return callback(null, { statusCode: 404, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify('404 Not Found [' + event.resource + ']') });
