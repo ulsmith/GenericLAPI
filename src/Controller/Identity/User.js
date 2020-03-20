@@ -135,7 +135,7 @@ class User extends Controller {
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.isPermitted('api.identity.user', 'read,write');
+		this.$services.auth.isPermitted('api.identity.user', 'write');
 
 		let user = new UserModel();
 
@@ -149,8 +149,8 @@ class User extends Controller {
 				if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
 
 				// not same user, need to check permissions further, related org or all permission
-				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
-				else this.$services.auth.isPermitted('api.identity.user.system', 'read,write');
+				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'write');
+				else this.$services.auth.isPermitted('api.identity.user.system', 'write');
 
 				return usr;
 			})			

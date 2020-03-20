@@ -122,11 +122,11 @@ class Organisation extends Controller {
      */
 	patch(event, context) {
 		// check permissions for access, throws rest error on failure.
-		this.$services.auth.isPermitted('api.identity.organisation', 'read,write');
+		this.$services.auth.isPermitted('api.identity.organisation', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'read,write');
-		else this.$services.auth.isPermitted('api.identity.organisation.system', 'read,write');
+		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'write');
+		else this.$services.auth.isPermitted('api.identity.organisation.system', 'write');
 
 		// check partial dataset
 		let organisation = new OrganisationModel();
