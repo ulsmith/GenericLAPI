@@ -14,6 +14,7 @@ create extension if not exists "uuid-ossp";
 
 -- create schema's
 CREATE SCHEMA IF NOT EXISTS "public";
+CREATE SCHEMA IF NOT EXISTS "system";
 CREATE SCHEMA IF NOT EXISTS "identity";
 
 -- create ENUM's
@@ -263,19 +264,19 @@ CREATE INDEX registration_idx_1 on identity.registration (identity ASC,identity_
 CREATE TRIGGER updated__registration BEFORE UPDATE ON "identity"."registration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
 -- Table: registration
-CREATE TABLE public."configuration" (
+CREATE TABLE system."configuration" (
     id serial  NOT NULL,
     created timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated timestamp  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     key text  NOT NULL,
     value json  NULL,
     CONSTRAINT configuration_ak_1 UNIQUE (key) NOT DEFERRABLE  INITIALLY IMMEDIATE,
-    CONSTRAINT public__configuration__primary_key PRIMARY KEY (id)
+    CONSTRAINT system__configuration__primary_key PRIMARY KEY (id)
 );
 
-CREATE INDEX configuration_idx_1 on public.configuration (key ASC);
+CREATE INDEX configuration_idx_1 on system.configuration (key ASC);
 
-CREATE TRIGGER updated__configuration BEFORE UPDATE ON "public"."configuration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
+CREATE TRIGGER updated__configuration BEFORE UPDATE ON "system"."configuration" FOR EACH ROW EXECUTE PROCEDURE  updated_current_timestamp();;
 
 -- foreign keys
 -- Reference: department_group_department (table: department_group)
@@ -431,7 +432,7 @@ ALTER TABLE identity.user_role ADD CONSTRAINT user_role_user
 -- Preload database with basic user
 
 -- add config
-INSERT INTO "public"."configuration" ("key", "value")
+INSERT INTO "system"."configuration" ("key", "value")
 VALUES
 ('admin', '{"email": "p@ulsmith.net"}'),
 ('registration', '{"autoActivateUser": false, "emailAdminRegistrationActivate": false, "emailAdminRegistrationCreated": false, "emailAdminRegistrationCompleted": false}');;
