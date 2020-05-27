@@ -516,9 +516,7 @@ class User extends Model {
 			return this.transaction((trx) => {
 				return Promise.resolve()
 					.then(() => {
-						console.log('u', uMapped);
-						if (uMapped) return this.transactUpdate(trx, id, uMapped, '*')[0];
-						console.log('p');
+						if (uMapped) return this.transactUpdate(trx, id, uMapped, '*');
 						return this.get(id);
 					})
 					.then((usr) => {
@@ -532,7 +530,7 @@ class User extends Model {
 							}
 
 							// splice id into error response, dont want it in normally but we are updating from user resource for convenience!
-							return Promise.all(identities).then((uis) => ({ ...usrs[0], ...{ userIdentity: uis.map((ui) => ui[0]) } }))
+							return Promise.all(identities).then((uis) => ({ ...usr, ...{ userIdentity: uis.map((ui) => ui[0]) } }))
 								.catch((error) => {
 									throw new SystemError('Invalid data, could not update record', {
 										...userIdentity.parseError(error), userIdentity: {
@@ -558,7 +556,7 @@ class User extends Model {
 									throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
 								});
 						}
-
+						
 						return usr;
 					})
 					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
