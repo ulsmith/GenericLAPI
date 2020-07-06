@@ -17,15 +17,17 @@ class Knex extends knex {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor() {
+	constructor(connection) {
+		connection = connection || {};
+
 		super({
-			client: process.env.KnexEngine,
+			client: connection.engine || process.env.KNEX_ENGINE,
 			connection: {
-				host: process.env.KnexHost,
-				port: process.env.KnexPort,
-				database: process.env.KnexDatabase,
-				user: process.env.KnexUsername,
-				password: process.env.KnexPassword
+				host: connection.host || process.env.KNEX_HOST,
+				port: connection.port || process.env.KNEX_PORT,
+				database: connection.database || process.env.KNEX_DATABASE,
+				user: connection.username || process.env.KNEX_USERNAME,
+				password: connection.password || process.env.KNEX_PASSWORD
 			}
 		});
 	}

@@ -1,9 +1,9 @@
 'use strict';
 
-const Model = require('../../System/Model.js');
+const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Health
+ * @namespace API/Model/Dbduck/Health
  * @class Health
  * @extends Model
  * @description Model class for checking system health
@@ -18,7 +18,7 @@ class Health extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super();
+		super('dbduck');
 	}
 
     /**

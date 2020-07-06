@@ -28,7 +28,9 @@ class Knex extends Middleware {
      * @param {Object} context The lambda context
      */
 	out(response, context) {
-		return this.$services.knex.destroy();
+		let services = [];
+		for (const service in this.$services.knex) services.push(this.$services.knex[service].destroy());
+		return Promise.all(services);
 	}
 }
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const Service = require('../System/Service.js');
-const ConfigModel = require('../Model/System/Configuration.js');
+const ConfigModel = require('../Model/Dbduck/Public/Configuration.js');
 
 /**
  * @namespace API/Service

@@ -1,25 +1,25 @@
 'use strict';
 
-const Model = require('../../System/Model.js');
+const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Identity
- * @class UserRole
+ * @namespace API/Model/Dbduck/System
+ * @class Configuration
  * @extends Model
- * @description Model class for identity.user_role table
+ * @description Model class for system.configuration table
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class UserRole extends Model {
+class Configuration extends Model {
 
 	/**
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
     constructor() {
-		super('identity.user_role');
-    }
+		super('dbduck', 'public.configuration');
+	}
 }
 
-module.exports = UserRole;
+module.exports = Configuration;

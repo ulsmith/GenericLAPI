@@ -4,9 +4,9 @@ const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
 const Comms = require('../../Library/Comms.js');
-const UserModel = require('../../Model/Identity/User.js');
-const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
-const UserAccountModel = require('../../Model/Identity/UserAccount.js');
+const UserModel = require('../../Model/Dbduck/Identity/User.js');
+const UserIdentityModel = require('../../Model/Dbduck/Identity/UserIdentity.js');
+const UserAccountModel = require('../../Model/Dbduck/Identity/UserAccount.js');
 const { PasswordResetHtml, PasswordResetText } = require('../../View/Email/User/PasswordReset.js');
 
 /**
@@ -30,11 +30,11 @@ class Reset extends Controller {
         // send email out
         this.comms = new Comms();
         this.comms.emailConfigure(
-            this.$environment.EmailHost,
-            this.$environment.EmailPort,
-            this.$environment.EmailSecureWithTls,
-            this.$environment.EmailUsername,
-            this.$environment.EmailPassword
+            this.$environment.EMAIL_HOST,
+            this.$environment.EMAIL_PORT,
+            this.$environment.EMAIL_SECURE_WITH_TLS,
+            this.$environment.EMAIL_USERNAME,
+            this.$environment.EMAIL_PASSWORD
         );
     }
 
@@ -73,28 +73,28 @@ class Reset extends Controller {
                 // check user is active
                 if (!usr.active) throw new RestError('User is not active, please try again later.', 400);
                 // Need to flood prevent here too
-                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < Number(this.$environment.TokenExpireSeconds)) throw new RestError('Please give ' + (this.$environment.TokenExpireSeconds / 60) + ' minutes between password reset requests.', 401);
+                if ((Date.now() - (new Date(usr.password_reminder_sent)).getTime()) / 1000 < Number(this.$environment.TOKEN_EXPIRE_SECONDS)) throw new RestError('Please give ' + (this.$environment.TOKEN_EXPIRE_SECONDS / 60) + ' minutes between password reset requests.', 401);
 
                 return usr;
             })
             .then((usr) => {
                 return userAccount.update(usr.id, {
-                    password_reminder: Crypto.encodeToken('reset', usr.uuid, this.$environment.HostAddress, this.$client.origin, this.$environment.TokenExpireSeconds, this.$environment.JWTKey, this.$environment.AESKey),
+                    password_reminder: Crypto.encodeToken('reset', usr.uuid, this.$environment.HOST_ADDRESS, this.$client.origin, this.$environment.TOKEN_EXPIRE_SECONDS, this.$environment.JWT_KEY, this.$environment.AES_KEY),
                     password_reminder_sent: new Date()
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
             })
             .then((data) => {
                 let emailData = {
-                    systemName: this.$environment.HostName,
-                    systemUrl: this.$environment.HostAddress,
-                    expireTime: Number(this.$environment.TokenExpireSeconds) / 60,
+                    systemName: this.$environment.HOST_NAME,
+                    systemUrl: this.$environment.HOST_ADDRESS,
+                    expireTime: Number(this.$environment.TOKEN_EXPIRE_SECONDS) / 60,
                     name: data[0].name,
                     token: this.$client.origin && event.parsedBody.resetRoute
                         ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.resetRoute.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
-                        : this.$environment.HostAddress + '/account/reset/' + data[1].password_reminder
+                        : this.$environment.HOST_ADDRESS + '/account/reset/' + data[1].password_reminder
                 };
 
-                return this.comms.emailSend(event.parsedBody.identity, this.$environment.EmailFrom, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
+                return this.comms.emailSend(event.parsedBody.identity, this.$environment.EMAIL_FROM, 'Password Reset', PasswordResetHtml(emailData), PasswordResetText(emailData));
             })
             .then(() => 'Password reset')
             .catch((error) => {
@@ -118,7 +118,7 @@ class Reset extends Controller {
         let userIdentity = new UserIdentityModel();
         let userAccount = new UserAccountModel();
 
-        return Promise.resolve().then(() => Crypto.decodeToken('reset', event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey))
+        return Promise.resolve().then(() => Crypto.decodeToken('reset', event.pathParameters.token, this.$environment.JWT_KEY, this.$environment.AES_KEY))
             .then((uuid) => userModel.getAuthedFromUUID(uuid))
             .then((usr) => userIdentity.find({ user_id: usr.id, identity: event.parsedBody.identity, type: event.parsedBody.identityType }))
             .then((usr) => {

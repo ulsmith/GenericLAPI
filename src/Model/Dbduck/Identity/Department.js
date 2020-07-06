@@ -1,9 +1,9 @@
 'use strict';
 
-const Model = require('../../System/Model.js');
+const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Identity
+ * @namespace API/Model/Dbduck/Identity
  * @class Department
  * @extends Model
  * @description Model class for identity.department table
@@ -18,7 +18,7 @@ class Department extends Model {
 	 * @description Base method when instantiating class
 	 */
     constructor() {
-        super('identity.department');
+        super('dbduck', 'identity.department');
 	}
 
 	/**
@@ -36,11 +36,11 @@ class Department extends Model {
 			.select(
 				'department.*',
 				this.db.raw('COALESCE("organisation"."id"::boolean, false) AS "user_in_organisation"'),
-				this.db.raw('COALESCE("user_department"."user_id"::boolean, false) AS "user_in_department"')
+				this.db.raw('COALESCE("user__department"."user_id"::boolean, false) AS "user_in_department"')
 			)
 			.from('identity.department')
 			.leftJoin('identity.organisation', function () { this.on('department.organisation_id', '=', 'organisation.id').andOn('department.organisation_id', '=', orgId) })
-			.leftJoin('identity.user_department', function () { this.on('department.id', '=', 'user_department.department_id').andOn('user_department.user_id', '=', userId) })
+			.leftJoin('identity.user__department', function () { this.on('department.id', '=', 'user__department.department_id').andOn('user__department.user_id', '=', userId) })
 			.where({ 'department.id': id })
 			.limit(1);
 	}

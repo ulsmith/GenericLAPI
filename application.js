@@ -69,7 +69,7 @@ exports.handler = (event, context, callback) => {
 	};
 
 	process.__services = {
-		knex: new KnexService(),
+		knex: { dbduck: new KnexService() },
 		auth: new AuthService(),
 		config: new ConfigService()
 	};

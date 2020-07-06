@@ -3,8 +3,8 @@
 const Service = require('../System/Service.js');
 const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
-const UserModel = require('../Model/Identity/User.js');
-const UserAccountModel = require('../Model/Identity/UserAccount.js');
+const UserModel = require('../Model/Dbduck/Identity/User.js');
+const UserAccountModel = require('../Model/Dbduck/Identity/UserAccount.js');
 const JWT = require('jsonwebtoken');
 
 /**
@@ -207,7 +207,7 @@ class Auth extends Service {
 			throw new RestError({
 				message: 'Authorization failed, please log in to authorize.',
 				method: 'POST',
-				url: this.$environment.HostAddress + '/account/authenticate',
+				url: this.$environment.HOST_ADDRESS + '/account/authenticate',
 				body: { identity: '', password: '' }
 			}, 401);
 		}
@@ -291,17 +291,17 @@ class Auth extends Service {
      */
 	_generateJWT(user, organisation, userAgent) {
 		return JWT.sign({
-			iss: this.$environment.HostAddress,
+			iss: this.$environment.HOST_ADDRESS,
 			aud: this.$client.origin,
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds),
+			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWT_EXPIRE_SECONDS),
 			userUUID: user.uuid,
 			userIdentity: user.identity,
 			userIdentityType: user.identityType,
 			organisationUUID: organisation ? organisation.uuid : undefined,
 			userAgent: userAgent
-		}, process.env.JWTKey, { algorithm: 'HS256' });
+		}, process.env.JWT_KEY, { algorithm: 'HS256' });
 	}
 
     /**
@@ -311,7 +311,7 @@ class Auth extends Service {
      * @return {Boolean} Is JWT verified or not?
      */
 	_verifyJWT(token) {
-		return JWT.verify(token, process.env.JWTKey, { algorithm: 'HS256' });
+		return JWT.verify(token, process.env.JWT_KEY, { algorithm: 'HS256' });
 	}
 
     /**
@@ -322,8 +322,8 @@ class Auth extends Service {
      */
 	_refreshJWT(token) {
 		let decoded = JWT.decode(token, { complete: true });
-		decoded.payload.exp = Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWTExpireSeconds);
-		return JWT.sign(decoded.payload, process.env.JWTKey, { algorithm: 'HS256' });
+		decoded.payload.exp = Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWT_EXPIRE_SECONDS);
+		return JWT.sign(decoded.payload, process.env.JWT_KEY, { algorithm: 'HS256' });
 	}
 }
 

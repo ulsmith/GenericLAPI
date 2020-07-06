@@ -54,7 +54,7 @@ class Comms {
 			if (alt) message.text = alt;
 			
 			// dev mode dump out all emails
-			if (process.env.Mode === 'development') console.log('<<< Email Out >>>', to, from, subject, body, alt);
+			if (process.env.MODE === 'development') console.log('<<< Email Out >>>', to, from, subject, body, alt);
 
 			this.comms.sendMail(message, (error, info) => {
 				if (error) return reject(error);

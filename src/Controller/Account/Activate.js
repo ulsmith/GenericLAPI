@@ -3,7 +3,7 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
-const UserModel = require('../../Model/Identity/User.js');
+const UserModel = require('../../Model/Dbduck/Identity/User.js');
 const Comms = require('../../Library/Comms.js');
 const { YourActivatedHtml, YourActivatedText } = require('../../View/Email/User/YourActivated.js');
 
@@ -28,11 +28,11 @@ class Activate extends Controller {
         // send email out
         this.comms = new Comms();
         this.comms.emailConfigure(
-            this.$environment.EmailHost,
-            this.$environment.EmailPort,
-            this.$environment.EmailSecureWithTls,
-            this.$environment.EmailUsername,
-            this.$environment.EmailPassword
+            this.$environment.EMAIL_HOST,
+            this.$environment.EMAIL_PORT,
+            this.$environment.EMAIL_SECURE_WITH_TLS,
+            this.$environment.EMAIL_USERNAME,
+            this.$environment.EMAIL_PASSWORD
         );
     }
 
@@ -57,7 +57,7 @@ class Activate extends Controller {
         let key;
 
         return Promise.resolve().then(() => {
-                key = Crypto.decodeToken('activate', event.pathParameters.token, this.$environment.JWTKey, this.$environment.AESKey);
+                key = Crypto.decodeToken('activate', event.pathParameters.token, this.$environment.JWT_KEY, this.$environment.AES_KEY);
             })
             .then(() => userModel.getAuthedFromIdentity(key, 'email'))
             .then((usr) => {
@@ -68,13 +68,13 @@ class Activate extends Controller {
             .then(() => {
                 // send email out
                 let emailData = {
-                    systemName: this.$environment.HostName,
-                    systemUrl: this.$environment.HostAddress,
+                    systemName: this.$environment.HOST_NAME,
+                    systemUrl: this.$environment.HOST_ADDRESS,
                     identity: key,
                     identityType: 'email'
                 };
 
-                return this.comms.emailSend(key, this.$environment.EmailFrom, 'Your Activated', YourActivatedHtml(emailData), YourActivatedText(emailData));
+                return this.comms.emailSend(key, this.$environment.EMAIL_FROM, 'Your Activated', YourActivatedHtml(emailData), YourActivatedText(emailData));
             })
             .then(() => 'User Activated')
             .catch((error) => {

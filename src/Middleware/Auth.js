@@ -37,7 +37,7 @@ class Auth extends Middleware {
 		if (!this.$client.origin) throw new RestError('Origin is not set, access denied', 401);
 
 		// origin failed to auth to white list
-		if (this.$environment.CorsWhitelist.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
+		if (this.$environment.CORS_WHITELIST.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
 
 		// public access, do not authorize
 		if (event.controller.access === 'public') return;

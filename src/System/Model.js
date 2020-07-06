@@ -19,9 +19,10 @@ class Model extends Core {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor(table) {
+	constructor(dbname, table) {
 		super();
 
+		this.dbname = dbname;
 		this.table = table;
 	}
 
@@ -30,7 +31,7 @@ class Model extends Core {
 	 * @desciption Get the services available to the system
 	 * @return {Knex} Knex service abstracted to db
 	 */
-	get db() { return this.$services.knex }
+	get db() { return this.$services.knex[this.dbname] }
 
 	/**
 	 * @private @get model

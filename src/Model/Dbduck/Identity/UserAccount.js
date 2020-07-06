@@ -1,9 +1,9 @@
 'use strict';
 
-const Model = require('../../System/Model.js');
+const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Identity
+ * @namespace API/Model/Dbduck/Identity
  * @class UserAccount
  * @extends Model
  * @description Model class for identity.user_account table
@@ -18,7 +18,7 @@ class UserAccount extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super('identity.user_account');
+		super('dbduck', 'identity.user_account');
 	}
 
     /**

@@ -1,14 +1,14 @@
 'use strict';
 
-const Model = require('../../System/Model.js');
-const UserIdentityModel = require('../../Model/Identity/UserIdentity.js');
-const UserAccountModel = require('../../Model/Identity/UserAccount.js');
-const UserGroupModel = require('../../Model/Identity/UserGroup.js');
-const SystemError = require('../../System/SystemError.js');
-const Crypto = require('../../Library/Crypto.js');
+const Model = require('../../../System/Model.js');
+const UserIdentityModel = require('../Identity/UserIdentity.js');
+const UserAccountModel = require('../Identity/UserAccount.js');
+const UserGroupModel = require('../Identity/UserGroup.js');
+const SystemError = require('../../../System/SystemError.js');
+const Crypto = require('../../../Library/Crypto.js');
 
 /**
- * @namespace API/Model/Identity
+ * @namespace API/Model/Dbduck/Identity
  * @class User
  * @extends Model
  * @description Model class for identity.user table
@@ -23,7 +23,7 @@ class User extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super('identity.user');
+		super('dbduck', 'identity.user');
 	}
 
     /**
@@ -65,8 +65,8 @@ class User extends Model {
 			.from('identity.user')
 			.leftJoin('identity.user_account', 'user.id', 'user_account.user_id')
 			.leftJoin('identity.user_identity', 'user.id', 'user_identity.user_id')
-			.leftJoin('identity.user_department', 'user.id', 'user_department.user_id')
-			.leftJoin('identity.organisation', 'user_department.department_organisation_id', 'organisation.id')
+			.leftJoin('identity.user__department', 'user.id', 'user__department.user_id')
+			.leftJoin('identity.organisation', 'user__department.department_organisation_id', 'organisation.id')
 			.where({ 'user.uuid': uuid })
 			.then((data) => {
 				if (data.length < 1) return;
@@ -180,9 +180,9 @@ class User extends Model {
 	 *	"organisation"."name",
 	 *	"organisation"."name_unique",
 	 *	"organisation"."description"
-	 * FROM "identity"."user_department"
-	 * JOIN "identity"."organisation" ON "organisation"."id" = "user_department"."department_organisation_id"
-	 * WHERE "user_department"."user_id" = 1
+	 * FROM "identity"."user__department"
+	 * JOIN "identity"."organisation" ON "organisation"."id" = "user__department"."department_organisation_id"
+	 * WHERE "user__department"."user_id" = 1
      */
 	getUserOrganisations(userID) {
 		return this.db
@@ -194,9 +194,9 @@ class User extends Model {
 				'organisation.active',
 				'organisation.description'
 			)
-			.from('identity.user_department')
-			.join('identity.organisation', 'organisation.id', 'user_department.department_organisation_id')
-			.where('user_department.user_id', userID)
+			.from('identity.user__department')
+			.join('identity.organisation', 'organisation.id', 'user__department.department_organisation_id')
+			.where('user__department.user_id', userID)
 			.orderBy('organisation.name', 'ASC');
 	}
 
@@ -213,9 +213,9 @@ class User extends Model {
 	 *	"organisation"."name",
 	 *	"organisation"."name_unique",
 	 *	"organisation"."description"
-	 * FROM "identity"."user_department"
-	 * JOIN "identity"."organisation" ON "organisation"."id" = "user_department"."department_organisation_id"
-	 * WHERE "user_department"."user_id" = 1
+	 * FROM "identity"."user__department"
+	 * JOIN "identity"."organisation" ON "organisation"."id" = "user__department"."department_organisation_id"
+	 * WHERE "user__department"."user_id" = 1
      */
 	getUserOrganisation(userID, organisationUUID) {
 		if (!organisationUUID) return Promise.resolve([]);
@@ -229,9 +229,9 @@ class User extends Model {
 				'organisation.active',
 				'organisation.description'
 			)
-			.from('identity.user_department')
-			.join('identity.organisation', 'organisation.id', 'user_department.department_organisation_id')
-			.where('user_department.user_id', userID)
+			.from('identity.user__department')
+			.join('identity.organisation', 'organisation.id', 'user__department.department_organisation_id')
+			.where('user__department.user_id', userID)
 			.where('organisation.uuid', organisationUUID)
 			.limit(1)
 			.then((data) => data[0] || undefined);
@@ -246,23 +246,23 @@ class User extends Model {
 	 *
 	 * SELECT
 	 * "role"."name_unique" AS "role"
-	 * , COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
-	 * , COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
-	 * , COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
+	 * , COALESCE(bool_or("user__role"."read") OR bool_or("department__role"."read") OR bool_or("user__group__role"."read") OR bool_or("department__group__role"."read"), FALSE) AS "read"
+	 * , COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"
+	 * , COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"
 	 * FROM "identity"."role"
 	 * -- get user and department first
 	 * LEFT JOIN "identity"."user" ON "user"."id" = 1
-	 * LEFT JOIN "identity"."user_department" ON "user_department"."user_id" = 1 AND "user_department"."department_organisation_id" = 0
+	 * LEFT JOIN "identity"."user__department" ON "user__department"."user_id" = 1 AND "user__department"."department_organisation_id" = 0
 	 * -- get specific user roles (from user)
-	 * LEFT JOIN "identity"."user_role" ON "user_role"."role_id" = "role"."id" AND "user_role"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."user__role" ON "user__role"."role_id" = "role"."id" AND "user__role"."user_id" = "user"."id"
 	 * -- get specific department roles (from department)
-	 * LEFT JOIN "identity"."department_role" ON "department_role"."role_id" = "role"."id" AND "department_role"."department_id" = "user_department"."department_id"
+	 * LEFT JOIN "identity"."department__role" ON "department__role"."role_id" = "role"."id" AND "department__role"."department_id" = "user__department"."department_id"
 	 * -- get specific user group roles (from user)
-	 * LEFT JOIN "identity"."user_group" ON "user_group"."user_id" = "user"."id"
-	 * LEFT JOIN "identity"."group_role" AS "user_group_role" ON "user_group_role"."group_id" = "user_group"."group_id" AND "user_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."user__group" ON "user__group"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."group__role" AS "user__group__role" ON "user__group__role"."group_id" = "user__group"."group_id" AND "user__group__role"."role_id" = "role"."id"
 	 * -- get specific department group roles (from department)
-	 * LEFT JOIN "identity"."department_group" ON "department_group"."department_id" = "user_department"."department_id"
-	 * LEFT JOIN "identity"."group_role" AS "department_group_role" ON "department_group_role"."group_id" = "department_group"."group_id" AND "department_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."department__group" ON "department__group"."department_id" = "user__department"."department_id"
+	 * LEFT JOIN "identity"."group__role" AS "department__group__role" ON "department__group__role"."group_id" = "department__group"."group_id" AND "department__group__role"."role_id" = "role"."id"
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
 	 * GROUP BY role.name_unique
 	 * ORDER BY "role"."name_unique" ASC;
@@ -271,19 +271,19 @@ class User extends Model {
 		return this.db
 			.select(
 				'role.name_unique AS role',
-				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
-				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
-				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
+				this.db.raw('COALESCE(bool_or(user__role.read) OR bool_or(department__role.read) OR bool_or(user__group__role.read) OR bool_or(department__group__role.read), FALSE) AS read'),
+				this.db.raw('COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"'),
+				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
 			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
-			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user.id') })
-			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
-			.leftJoin('identity.user_group', 'user_group.user_id', 'user.id')
-			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
-			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
-			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
+			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
+			.leftJoin('identity.user__group', 'user__group.user_id', 'user.id')
+			.leftJoin('identity.group__role AS user__group__role', function () { this.on('user__group__role.group_id', '=', 'user__group.group_id').andOn('user__group__role.role_id', '=', 'role.id') })
+			.leftJoin('identity.department__group', 'department__group.department_id', 'user__department.department_id')
+			.leftJoin('identity.group__role AS department__group__role', function () { this.on('department__group__role.group_id', '=', 'department__group.group_id').andOn('department__group__role.role_id', '=', 'role.id') })
 			.groupBy('role.name_unique')
 			.orderBy('role.name_unique', 'ASC');
 	}
@@ -298,23 +298,23 @@ class User extends Model {
 	 *
 	 * SELECT
 	 * "role"."name_unique" AS "role"
-	 * , COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
-	 * , COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
-	 * , COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
+	 * , COALESCE(bool_or("user__role"."read") OR bool_or("department__role"."read") OR bool_or("user__group__role"."read") OR bool_or("department__group__role"."read"), FALSE) AS "read"
+	 * , COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"
+	 * , COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"
 	 * FROM "identity"."role"
 	 * -- get user and department first
 	 * LEFT JOIN "identity"."user" ON "user"."id" = 1
-	 * LEFT JOIN "identity"."user_department" ON "user_department"."user_id" = 1 AND "user_department"."department_organisation_id" = 0
+	 * LEFT JOIN "identity"."user__department" ON "user__department"."user_id" = 1 AND "user__department"."department_organisation_id" = 0
 	 * -- get specific user roles (from user)
-	 * LEFT JOIN "identity"."user_role" ON "user_role"."role_id" = "role"."id" AND "user_role"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."user__role" ON "user__role"."role_id" = "role"."id" AND "user__role"."user_id" = "user"."id"
 	 * -- get specific department roles (from department)
-	 * LEFT JOIN "identity"."department_role" ON "department_role"."role_id" = "role"."id" AND "department_role"."department_id" = "user_department"."department_id"
+	 * LEFT JOIN "identity"."department__role" ON "department__role"."role_id" = "role"."id" AND "department__role"."department_id" = "user__department"."department_id"
 	 * -- get specific user group roles (from user)
-	 * LEFT JOIN "identity"."user_group" ON "user_group"."user_id" = "user"."id"
-	 * LEFT JOIN "identity"."group_role" AS "user_group_role" ON "user_group_role"."group_id" = "user_group"."group_id" AND "user_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."user__group" ON "user__group"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."group__role" AS "user__group__role" ON "user__group__role"."group_id" = "user__group"."group_id" AND "user__group__role"."role_id" = "role"."id"
 	 * -- get specific department group roles (from department)
-	 * LEFT JOIN "identity"."department_group" ON "department_group"."department_id" = "user_department"."department_id"
-	 * LEFT JOIN "identity"."group_role" AS "department_group_role" ON "department_group_role"."group_id" = "department_group"."group_id" AND "department_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."department__group" ON "department__group"."department_id" = "user__department"."department_id"
+	 * LEFT JOIN "identity"."group__role" AS "department__group__role" ON "department__group__role"."group_id" = "department__group"."group_id" AND "department__group__role"."role_id" = "role"."id"
 	 * --reduce to specific role
 	 * WHERE "role"."name_unique" LIKE '...%'
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
@@ -325,19 +325,19 @@ class User extends Model {
 		return this.db
 			.select(
 				'role.name_unique AS role',
-				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
-				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
-				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
+				this.db.raw('COALESCE(bool_or(user__role.read) OR bool_or(department__role.read) OR bool_or(user__group__role.read) OR bool_or(department__group__role.read), FALSE) AS read'),
+				this.db.raw('COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"'),
+				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
 			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
-			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user.id') })
-			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
-			.leftJoin('identity.user_group', 'user_group.user_id', 'user.id')
-			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
-			.leftJoin('identity.department_group', 'department_group.department_id', 'user_department.department_id')
-			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
+			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
+			.leftJoin('identity.user__group', 'user__group.user_id', 'user.id')
+			.leftJoin('identity.group__role AS user__group__role', function () { this.on('user__group__role.group_id', '=', 'user__group.group_id').andOn('user__group__role.role_id', '=', 'role.id') })
+			.leftJoin('identity.department__group', 'department__group.department_id', 'user__department.department_id')
+			.leftJoin('identity.group__role AS department__group__role', function () { this.on('department__group__role.group_id', '=', 'department__group.group_id').andOn('department__group__role.role_id', '=', 'role.id') })
 			.where('role.name_unique', 'LIKE', match + '%')
 			.groupBy('role.name_unique')
 			.orderBy('role.name_unique', 'ASC');
@@ -353,23 +353,23 @@ class User extends Model {
 	 *
 	 * SELECT
 	 * "role"."name_unique" AS "role"
-	 * , COALESCE(bool_or("user_role"."read") OR bool_or("department_role"."read") OR bool_or("user_group_role"."read") OR bool_or("department_group_role"."read"), FALSE) AS "read"
-	 * , COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"
-	 * , COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"
+	 * , COALESCE(bool_or("user__role"."read") OR bool_or("department__role"."read") OR bool_or("user__group__role"."read") OR bool_or("department__group__role"."read"), FALSE) AS "read"
+	 * , COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"
+	 * , COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"
 	 * FROM "identity"."role"
 	 * -- get user and department first
 	 * LEFT JOIN "identity"."user" ON "user"."id" = 1
-	 * LEFT JOIN "identity"."user_department" ON "user_department"."user_id" = 1 AND "user_department"."department_organisation_id" = 0
+	 * LEFT JOIN "identity"."user__department" ON "user__department"."user_id" = 1 AND "user__department"."department_organisation_id" = 0
 	 * -- get specific user roles (from user)
-	 * LEFT JOIN "identity"."user_role" ON "user_role"."role_id" = "role"."id" AND "user_role"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."user__role" ON "user__role"."role_id" = "role"."id" AND "user__role"."user_id" = "user"."id"
 	 * -- get specific department roles (from department)
-	 * LEFT JOIN "identity"."department_role" ON "department_role"."role_id" = "role"."id" AND "department_role"."department_id" = "user_department"."department_id"
+	 * LEFT JOIN "identity"."department__role" ON "department__role"."role_id" = "role"."id" AND "department__role"."department_id" = "user__department"."department_id"
 	 * -- get specific user group roles (from user)
-	 * LEFT JOIN "identity"."user_group" ON "user_group"."user_id" = "user"."id"
-	 * LEFT JOIN "identity"."group_role" AS "user_group_role" ON "user_group_role"."group_id" = "user_group"."group_id" AND "user_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."user__group" ON "user__group"."user_id" = "user"."id"
+	 * LEFT JOIN "identity"."group__role" AS "user__group__role" ON "user__group__role"."group_id" = "user__group"."group_id" AND "user__group__role"."role_id" = "role"."id"
 	 * -- get specific department group roles (from department)
-	 * LEFT JOIN "identity"."department_group" ON "department_group"."department_id" = "user_department"."department_id"
-	 * LEFT JOIN "identity"."group_role" AS "department_group_role" ON "department_group_role"."group_id" = "department_group"."group_id" AND "department_group_role"."role_id" = "role"."id"
+	 * LEFT JOIN "identity"."department__group" ON "department__group"."department_id" = "user__department"."department_id"
+	 * LEFT JOIN "identity"."group__role" AS "department__group__role" ON "department__group__role"."group_id" = "department__group"."group_id" AND "department__group__role"."role_id" = "role"."id"
 	 * --reduce to specific role
 	 * WHERE "role"."name_unique" LIKE '...%'
 	 * -- group them and combine permissions. will extract any true as true otherwise fasle. permissions are accumulative
@@ -380,19 +380,19 @@ class User extends Model {
 		return this.db
 			.select(
 				'role.name_unique AS role',
-				this.db.raw('COALESCE(bool_or(user_role.read) OR bool_or(department_role.read) OR bool_or(user_group_role.read) OR bool_or(department_group_role.read), FALSE) AS read'),
-				this.db.raw('COALESCE(bool_or("user_role"."write") OR bool_or("department_role"."write") OR bool_or("user_group_role"."write") OR bool_or("department_group_role"."write"), FALSE) AS "write"'),
-				this.db.raw('COALESCE(bool_or("user_role"."delete") OR bool_or("department_role"."delete") OR bool_or("user_group_role"."delete") OR bool_or("department_group_role"."delete"), FALSE) AS "delete"')
+				this.db.raw('COALESCE(bool_or(user__role.read) OR bool_or(department__role.read) OR bool_or(user__group__role.read) OR bool_or(department__group__role.read), FALSE) AS read'),
+				this.db.raw('COALESCE(bool_or("user__role"."write") OR bool_or("department__role"."write") OR bool_or("user__group__role"."write") OR bool_or("department__group__role"."write"), FALSE) AS "write"'),
+				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
 			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user_department', function () { this.on('user_department.user_id', '=', userID).andOn('user_department.department_organisation_id', '=', organisationID || 0) })
-			.leftJoin('identity.user_role', function () { this.on('user_role.role_id', '=', 'role.id').andOn('user_role.user_id', '=', 'user.id') })
-			.leftJoin('identity.department_role', function () { this.on('department_role.role_id', '=', 'role.id').andOn('department_role.department_id', '=', 'user_department.department_id') })
-			.leftJoin('identity.user_group', 'user_group.user_id', 'user_department.user_id')
-			.leftJoin('identity.group_role AS user_group_role', function () { this.on('user_group_role.group_id', '=', 'user_group.group_id').andOn('user_group_role.role_id', '=', 'role.id') })
-			.leftJoin('identity.department_group', 'department_group.department_id', 'user.id')
-			.leftJoin('identity.group_role AS department_group_role', function () { this.on('department_group_role.group_id', '=', 'department_group.group_id').andOn('department_group_role.role_id', '=', 'role.id') })
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
+			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
+			.leftJoin('identity.user__group', 'user__group.user_id', 'user__department.user_id')
+			.leftJoin('identity.group__role AS user__group__role', function () { this.on('user__group__role.group_id', '=', 'user__group.group_id').andOn('user__group__role.role_id', '=', 'role.id') })
+			.leftJoin('identity.department__group', 'department__group.department_id', 'user.id')
+			.leftJoin('identity.group__role AS department__group__role', function () { this.on('department__group__role.group_id', '=', 'department__group.group_id').andOn('department__group__role.role_id', '=', 'role.id') })
 			.where('role.name_unique', match)
 			.groupBy('role.name_unique')
 			.limit(1);
@@ -452,7 +452,7 @@ class User extends Model {
 					})
 					.then((usr) => {
 						// add new user to basic user group on default DB setup
-						return userGroup.transactInsert(trx, { user_id: usr.id, group_id: this.$environment.UserBasicUserGroupId })
+						return userGroup.transactInsert(trx, { user_id: usr.id, group_id: this.$environment.USER_BASIC_USER_GROUP_ID })
 							.then(() => usr)
 							.catch((error) => {
 								throw new SystemError('Invalid data, could not add record');
