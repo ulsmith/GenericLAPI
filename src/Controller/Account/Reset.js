@@ -29,13 +29,6 @@ class Reset extends Controller {
         
         // send email out
         this.comms = new Comms();
-        this.comms.emailConfigure(
-            this.$environment.EMAIL_HOST,
-            this.$environment.EMAIL_PORT,
-            this.$environment.EMAIL_SECURE_WITH_TLS,
-            this.$environment.EMAIL_USERNAME,
-            this.$environment.EMAIL_PASSWORD
-        );
     }
 
 	/**
