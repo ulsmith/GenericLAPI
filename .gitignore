@@ -4,3 +4,4 @@ packaged.template.yml
 packaged.template.yaml
 node_modules
 package-lock.json
+migrate.*

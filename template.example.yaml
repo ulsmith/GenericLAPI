@@ -15,51 +15,52 @@ Globals:
     Handler: application.handler
     Environment:
       Variables:
-        Version: 0.0.1
-        Mode: development
-        CorsWhitelist: 'http://your-ui-dns-address.com' 
-        HostAddress: 'http://localhost:3000'
-        JWTKey: ...zCDAieQVC...
-        JWTExpireSeconds: 3000
+        # Generic
+        VERSION: 0.0.1
+        MODE: development
+        CORS_WHITELIST: 'http://project7.net:8082,http://192.168.1.99:8082,http://localhost:8082,http://localhost:8081,http://127.0.0.1:8081,http://docker.local' 
+        HOST_NAME: 'GenericLAPI'
+        HOST_ADDRESS: 'http://localhost:3000'
         
-        AESKey: fDA...QVC
-
-        PasswordResetExpireSeconds: 600
+        # Security
+        JWT_KEY: zC....pcc
+        JWT_EXPIRE_SECONDS: 2592000
+        AES_KEY: fDA...eQVC
+        TOKEN_EXPIRE_SECONDS: 1800
+        ACTIVATE_EXPIRE_SECONDS: 604800
         
-        EmailHost: smtp....com
-        EmailPort: 465
-        EmailSecureWithTls: true
-        EmailUsername: ra....com
-        EmailPassword: s...l
-        EmailFromAddress: p...t
-        EmailFromName: '"No Reply" <no-reply@r....net>'
+        # Email (using SES, just set from account)
+        EMAIL_FROM: 'no.reply@dbduck.net'
         
-        KnexEngine: 'postgres'
-        KnexHost: 'host-address-for-db'
-        KnexPort: 5432
-        KnexDatabase: 'generic'
-        KnexUsername: 'generic'
-        KnexPassword: '...dsfdghfgdgh...'
+        # DB
+        KNEX_ENGINE: 'postgres'
+        # KNEX_HOST: 'pg...om'
+        # KNEX_HOST: '192.168.1.15'
+        KNEX_HOST: '192.168.1.99'
+        KNEX_PORT: 5431
+        # KNEX_DATABASE: 'generic'
+        # KNEX_DATABASE: 'test'
+        KNEX_DATABASE: 'dbduck'
+        KNEX_USERNAME: 'postgres'
+        KNEX_PASSWORD: 'nl.....2DD'
+        USER_SUPER_ADMIN_USER_GROUP_ID: 1
+        USER_BASIC_USER_GROUP_ID: 2
 
 Resources:
-  LambdaSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: 'SecurityGroup for Lambda Serverless Functions'
-      VpcId: 'vpc-xxxxx'
-
   Account:
     Type: AWS::Serverless::Function
     Properties:
       ReservedConcurrentExecutions: 10
       Timeout: 30
       VpcConfig:
+        # SG Private with internet access
         SecurityGroupIds:
-          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+          - sg-0d73b6fd50ea8d6e0
+        # Core A/B with routing for NAT internet access
         SubnetIds:
-          - subnet-xxxx1
-          - subnet-xxxx2
-          - subnet-xxxx3
+          - subnet-03...d9
+          - subnet-087...81f
+      Role: !GetAtt LambdaAccountRole.Arn
       Events:
         AccountAuthenticatePost:
           Type: Api
@@ -86,6 +87,21 @@ Resources:
           Properties:
             Path: /account/reset/{token}
             Method: patch
+        AccountRegistrationPost:
+          Type: Api
+          Properties:
+            Path: /account/registration
+            Method: post
+        AccountRegistrationPatch:
+          Type: Api
+          Properties:
+            Path: /account/registration/{token}
+            Method: patch
+        AccountActivatePatch:
+          Type: Api
+          Properties:
+            Path: /account/activate/{token}
+            Method: patch
 
   Identity:
     Type: AWS::Serverless::Function
@@ -93,12 +109,13 @@ Resources:
       ReservedConcurrentExecutions: 10
       Timeout: 30
       VpcConfig:
+        # SG Private without internet access
         SecurityGroupIds:
-          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+          - sg-04a...c1
+        # Private A/B with no routing for NAT internet access
         SubnetIds:
-          - subnet-xxxx1
-          - subnet-xxxx2
-          - subnet-xxxx3
+          - subnet-09...85
+          - subnet-0e...39
       Events:
         IdentityOrganisationPost:
           Type: Api
@@ -120,11 +137,11 @@ Resources:
           Properties:
             Path: /identity/user/{uuid}
             Method: any
-        IdentityUserAccountPatch:
+        IdentityUsersGet:
           Type: Api
           Properties:
-            Path: /identity/user-account/{uuid}
-            Method: patch
+            Path: /identity/users
+            Method: get
         IdentityDepartmentPost:
           Type: Api
           Properties:
@@ -136,20 +153,41 @@ Resources:
             Path: /identity/department/{id}
             Method: any
 
+  System:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 10
+      Timeout: 30
+      VpcConfig:
+        # SG Private without internet access
+        SecurityGroupIds:
+          - sg-04a...cc1
+        # Private A/B with no routing for NAT internet access
+        SubnetIds:
+          - subnet-09...85
+          - subnet-0e...39
+      Events:
+        SystemConfigurationAny:
+          Type: Api
+          Properties:
+            Path: /system/configuration/{key}
+            Method: any
+
   Health:
     Type: AWS::Serverless::Function
     Properties:
       ReservedConcurrentExecutions: 10
       Timeout: 30
       VpcConfig:
+        # SG Private without internet access
         SecurityGroupIds:
-          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+          - sg-04aa...c1
+        # Private A/B with no routing for NAT internet access
         SubnetIds:
-          - subnet-xxxx1
-          - subnet-xxxx2
-          - subnet-xxxx3
+          - subnet-09c...85
+          - subnet-0e3...39
       Events:
-        AuthenticateGet:
+        HealthGet:
           Type: Api
           Properties:
             Path: /health
@@ -161,12 +199,13 @@ Resources:
       ReservedConcurrentExecutions: 10
       Timeout: 30
       VpcConfig:
+        # SG Private without internet access
         SecurityGroupIds:
-          - Fn::GetAtt: LambdaSecurityGroup.GroupId
+          - sg-04...c1
+        # Private A/B with no routing for NAT internet access
         SubnetIds:
-          - subnet-xxxx1
-          - subnet-xxxx2
-          - subnet-xxxx3
+          - subnet-09...85
+          - subnet-0e3...39
       ReservedConcurrentExecutions: 10
       Events:
         CatchAll:
@@ -174,3 +213,31 @@ Resources:
           Properties:
             Path: /{error+}
             Method: any
+
+  LambdaAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: sts:AssumeRole
+          Principal:
+            Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: LambdaEmailPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: LambdaEmailPermission
+            Effect: Allow
+            Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DetachNetworkInterface
+            - ec2:DeleteNetworkInterface
+            Resource: '*'
