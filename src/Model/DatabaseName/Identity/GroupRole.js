@@ -3,23 +3,23 @@
 const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Dbduck/Identity
- * @class DepartmentRole
+ * @namespace API/Model/DatabaseName/Identity
+ * @class GroupRole
  * @extends Model
- * @description Model class for identity.department__role table
+ * @description Model class for identity.group__role table
  * @author Paul Smith (ulsmith) <p@ulsmith.net> <pa.ulsmith.net>
  * @copyright 2020 Paul Smith (ulsmith) all rights reserved
  * @license MIT
  */
-class DepartmentRole extends Model {
+class GroupRole extends Model {
 
 	/**
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
     constructor() {
-		super('dbduck', 'identity.department__role');
+		super('database_name', 'identity.group__role');
     }
 }
 
-module.exports = DepartmentRole;
+module.exports = GroupRole;

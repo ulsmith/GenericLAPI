@@ -1,7 +1,7 @@
 'use strict';
 
 const Controller = require('../System/Controller.js');
-const HealthModel = require('../Model/Dbduck/Public/Health.js');
+const HealthModel = require('../Model/DatabaseName/Public/Health.js');
 
 /**
  * @namespace API/Controller

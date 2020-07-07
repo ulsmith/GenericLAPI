@@ -3,7 +3,7 @@
 const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Dbduck/Identity
+ * @namespace API/Model/DatabaseName/Identity
  * @class UserAccount
  * @extends Model
  * @description Model class for identity.user_account table
@@ -18,7 +18,7 @@ class UserAccount extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super('dbduck', 'identity.user_account');
+		super('database_name', 'identity.user_account');
 	}
 
     /**

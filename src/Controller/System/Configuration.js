@@ -2,7 +2,7 @@
 
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
-const ConfigurationModel = require('../../Model/Dbduck/Public/Configuration.js');
+const ConfigurationModel = require('../../Model/DatabaseName/Public/Configuration.js');
 
 /**
  * @namespace API/Controller/Identity

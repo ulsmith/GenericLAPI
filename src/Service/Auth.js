@@ -3,8 +3,8 @@
 const Service = require('../System/Service.js');
 const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
-const UserModel = require('../Model/Dbduck/Identity/User.js');
-const UserAccountModel = require('../Model/Dbduck/Identity/UserAccount.js');
+const UserModel = require('../Model/DatabaseName/Identity/User.js');
+const UserAccountModel = require('../Model/DatabaseName/Identity/UserAccount.js');
 const JWT = require('jsonwebtoken');
 
 /**

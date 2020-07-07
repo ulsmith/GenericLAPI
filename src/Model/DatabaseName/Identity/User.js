@@ -8,7 +8,7 @@ const SystemError = require('../../../System/SystemError.js');
 const Crypto = require('../../../Library/Crypto.js');
 
 /**
- * @namespace API/Model/Dbduck/Identity
+ * @namespace API/Model/DatabaseName/Identity
  * @class User
  * @extends Model
  * @description Model class for identity.user table
@@ -23,7 +23,7 @@ class User extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super('dbduck', 'identity.user');
+		super('database_name', 'identity.user');
 	}
 
     /**

@@ -4,9 +4,9 @@ const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
 const Comms = require('../../Library/Comms.js');
-const UserModel = require('../../Model/Dbduck/Identity/User.js');
-const UserIdentityModel = require('../../Model/Dbduck/Identity/UserIdentity.js');
-const UserAccountModel = require('../../Model/Dbduck/Identity/UserAccount.js');
+const UserModel = require('../../Model/DatabaseName/Identity/User.js');
+const UserIdentityModel = require('../../Model/DatabaseName/Identity/UserIdentity.js');
+const UserAccountModel = require('../../Model/DatabaseName/Identity/UserAccount.js');
 const { PasswordResetHtml, PasswordResetText } = require('../../View/Email/User/PasswordReset.js');
 
 /**

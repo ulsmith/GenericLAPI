@@ -8,7 +8,7 @@ VALUES (TRUE, 'Paul Smith', 'dbduck developer account');
 
 -- Add user identity
 INSERT INTO "identity"."user_identity" ("user_id", "identity", "type", "primary")
-VALUES (1, 'p@ulsmith.net', 'email', TRUE);
+VALUES (1, 'you@email.com', 'email', TRUE);
 
 -- Add user account (password)
 INSERT INTO "identity"."user_account" ("user_id", "password")
@@ -43,7 +43,7 @@ VALUES (1, 1);
 -- Add system config
 INSERT INTO "public"."configuration" ("name_unique", "data")
 VALUES
-	('admin', '{"email": "no-reply@dbduck.net"}'),
+	('admin', '{"email": "no-reply@system.net"}'),
 	('registration', '{"autoActivateUser": false, "emailAdminRegistrationActivate": false, "emailAdminRegistrationCreated": false, "emailAdminRegistrationCompleted": false}');
 
 -- End of file.

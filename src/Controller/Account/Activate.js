@@ -3,7 +3,7 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
-const UserModel = require('../../Model/Dbduck/Identity/User.js');
+const UserModel = require('../../Model/DatabaseName/Identity/User.js');
 const Comms = require('../../Library/Comms.js');
 const { YourActivatedHtml, YourActivatedText } = require('../../View/Email/User/YourActivated.js');
 

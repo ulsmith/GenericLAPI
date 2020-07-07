@@ -3,7 +3,7 @@
 const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Dbduck/Health
+ * @namespace API/Model/DatabaseName/Health
  * @class Health
  * @extends Model
  * @description Model class for checking system health
@@ -18,7 +18,7 @@ class Health extends Model {
 	 * @description Base method when instantiating class
 	 */
 	constructor () {
-		super('dbduck');
+		super('database_name');
 	}
 
     /**

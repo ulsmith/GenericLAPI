@@ -1,9 +1,9 @@
 -- @timestamp 1594068972316 --
 -- @type postgres --
--- @database dbduck --
+-- @database database_name --
 -- @name initial-setup --
 -- @author Paul Smith --
--- @copywrite dbduck.net --
+-- @copywrite n/a --
 -- @date 2020-07-06 --
 
 -- @up --

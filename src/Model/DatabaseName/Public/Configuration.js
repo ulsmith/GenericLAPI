@@ -3,7 +3,7 @@
 const Model = require('../../../System/Model.js');
 
 /**
- * @namespace API/Model/Dbduck/System
+ * @namespace API/Model/DatabaseName/System
  * @class Configuration
  * @extends Model
  * @description Model class for system.configuration table
@@ -18,7 +18,7 @@ class Configuration extends Model {
 	 * @description Base method when instantiating class
 	 */
     constructor() {
-		super('dbduck', 'public.configuration');
+		super('database_name', 'public.configuration');
 	}
 }
 

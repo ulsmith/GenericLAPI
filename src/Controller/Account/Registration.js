@@ -3,8 +3,8 @@
 const Controller = require('../../System/Controller.js');
 const RestError = require('../../System/RestError.js');
 const Crypto = require('../../Library/Crypto.js');
-const UserModel = require('../../Model/Dbduck/Identity/User.js');
-const RegistrationModel = require('../../Model/Dbduck/Identity/Registration.js');
+const UserModel = require('../../Model/DatabaseName/Identity/User.js');
+const RegistrationModel = require('../../Model/DatabaseName/Identity/Registration.js');
 const Comms = require('../../Library/Comms.js');
 const { YourAlreadyAUserHtml, YourAlreadyAUserText } = require('../../View/Email/User/YourAlreadyAUser.js');
 const { RegistrationHtml, RegistrationText } = require('../../View/Email/User/Registration.js');
