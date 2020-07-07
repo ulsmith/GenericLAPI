@@ -40,7 +40,7 @@ Globals:
         KNEX_PORT: 5431
         # KNEX_DATABASE: 'generic'
         # KNEX_DATABASE: 'test'
-        KNEX_DATABASE: 'dbduck'
+        KNEX_DATABASE: 'ddatabase_name'
         KNEX_USERNAME: 'postgres'
         KNEX_PASSWORD: 'nl.....2DD'
         USER_SUPER_ADMIN_USER_GROUP_ID: 1
@@ -55,7 +55,7 @@ Resources:
       VpcConfig:
         # SG Private with internet access
         SecurityGroupIds:
-          - sg-0d73b6fd50ea8d6e0
+          - sg-0d.....e0
         # Core A/B with routing for NAT internet access
         SubnetIds:
           - subnet-03...d9
