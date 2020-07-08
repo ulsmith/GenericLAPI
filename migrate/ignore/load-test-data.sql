@@ -1,10 +1,21 @@
+-- @type postgres --
+-- @database database_name --
+-- @name load-test-data --
+-- @author Paul Smith --
+-- @copywrite n/a --
+-- @date 2020-07-06 --
+
+-- @parse --
+
+BEGIN;
+
 -- Add initial AIR organisation
 INSERT INTO "identity"."organisation" ("active", "name", "name_unique", "description" )
-VALUES (TRUE, 'dbduck', 'dbduck', 'dbduck system organisation');
+VALUES (TRUE, 'generic', 'generic', 'generic system organisation');
 
 -- Add some default users for devs
 INSERT INTO "identity"."user" ("active", "name", "description")
-VALUES (TRUE, 'Paul Smith', 'dbduck developer account');
+VALUES (TRUE, 'Paul Smith', 'generic developer account');
 
 -- Add user identity
 INSERT INTO "identity"."user_identity" ("user_id", "identity", "type", "primary")
@@ -16,7 +27,7 @@ VALUES (1, '35f989ed45e11031ba10824ae31928d98da99571f0dd75bfe8002d87defa53d48bc1
 
 -- Add department for Air Org
 INSERT INTO "identity"."department" ("organisation_id", "active", "name", "name_unique", "description")
-VALUES (1, TRUE, 'Development', 'development', 'dbduck development department');
+VALUES (1, TRUE, 'Development', 'development', 'generic development department');
 
 -- Add group for Auper user access
 INSERT INTO "identity"."group" ("name", "name_unique", "description")
@@ -47,3 +58,5 @@ VALUES
 	('registration', '{"autoActivateUser": false, "emailAdminRegistrationActivate": false, "emailAdminRegistrationCreated": false, "emailAdminRegistrationCompleted": false}');
 
 -- End of file.
+
+COMMIT;

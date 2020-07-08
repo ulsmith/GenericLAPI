@@ -351,8 +351,78 @@ class Migrate {
 	static _getFilesToPrepare(dir) {
 		const paths = fs.readdirSync(dir);
 		const files = paths.map((path) => (fs.lstatSync(dir + '/' + path).isFile() ? dir + '/' + path : Migrate._getFilesToPrepare(dir + '/' + path)));
+		return files.flat().filter((f) => f.indexOf('./migrate/ignore/') !== 0);
+	}
 
-		return files.flat();
+	static async parse(migration, dbname) {
+		if (dbname && !databases.find((db) => db.database === dbname)) {
+			console.log('');
+			console.log('------------------------------------------');
+			console.log('UKNOWN DATABASE ' + dbname);
+			console.log('------------------------------------------');
+			console.log('');
+		}
+
+		// get all prepared migrations
+		migration = dbname ? process.argv[4] : process.argv[3];
+		let file = migration;
+
+		for await (const database of databases) {
+			if (dbname && dbname !== database.database) continue;
+
+			// connect DB
+			let db = Migrate._connect(database);
+			console.log('');
+			console.log('------------------------------------------');
+			console.log('PARSE SQL on ' + database.database);
+			console.log('------------------------------------------');
+			console.log('');
+
+			// check file not ran against db
+			const fd = fs.readFileSync(file, 'utf8');
+			const fdMeta = fd.split('-- @parse --')[0];
+			const fdParse = fd.split('-- @parse --')[1];
+
+			// check timestamp and database name
+			let dbName, mgName;
+			try {
+				dbName = fdMeta.match("-- @database (.*) --")[1];
+				mgName = fdMeta.match("-- @name (.*) --")[1];
+				if (!database.database) throw Error('Cannot resolve database name in file [' + file + ']');
+				if (database.database !== dbName) throw Error('Cannot parse SQL against "' + database.database + '" database name in file is "' + dbName + '"');
+				if (!mgName) throw Error('Cannot resolve migration name in file [' + file + ']');
+			} catch (error) {
+				if (!dbName || !mgName) console.log('Meta data missing from parsable file');
+				else if (error.message) console.log(error.message);
+				throw Error('Undefined error'); // only allow from or to with dbname
+			}
+			
+			// migration search
+			if (migration) {
+				// check basic
+				if (!dbname) {
+					console.log('');
+					console.log('Must use database name with specific migrations');
+					console.log('');
+					throw Error(); // only allow from or to with dbname
+				}
+
+				try {
+					await db.raw(fdParse);
+					console.log('...Completed PARSE of SQL file [' + file + ']');
+				} catch (error) {
+					console.log('Error with message: ' + error.message);
+				}
+			}
+
+			await db.destroy();
+		}
+
+		console.log('');
+		console.log('------------------------------------------');
+		console.log('COMPLETE');
+		console.log('------------------------------------------');
+		console.log('');
 	}
 
 	static async up(migration, dbname) {
