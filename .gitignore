@@ -1,7 +1,12 @@
 template.yml
 template.yaml
-packaged.template.yml
-packaged.template.yaml
+template.testing.*
+template.staging.*
+template.production.*
+packaged.template.*
 node_modules
 package-lock.json
-migrate.*
+migrate.json
+migrate.testing.json
+migrate.staging.json
+migrate.production.json

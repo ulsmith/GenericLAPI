@@ -1,0 +1,10 @@
+[
+	{
+		"engine": "postgres",
+		"host": "postgres12.docker.localhost",
+		"port": 5432,
+		"database": "database_name",
+		"user": "postgres",
+		"password": "nln...DD"
+	}
+]

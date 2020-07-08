@@ -101,11 +101,14 @@
 import fs from 'fs';
 import Knex from 'knex';
 
+// what context are we running against
+const server = process.env.SERVER;
+
 // DATABASES
 
 var databases;
 try {
-	let dbFileData = fs.readFileSync('./migrate.json');
+	let dbFileData = fs.readFileSync(`./migrate${server ? '.' + server : ''}.json`);
 	databases = JSON.parse(dbFileData);
 } catch (error) {
 	console.log('');

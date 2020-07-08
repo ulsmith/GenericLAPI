@@ -8,9 +8,18 @@
 	"scripts": {
 		"start": "sam local start-api --host 0.0.0.0 --template template.yaml",
 		"serve": "sam local start-api --skip-pull-image --host 0.0.0.0 --template template.yaml",
-		"package": "sam package --template-file template.yaml --s3-bucket ulsmith-cloudformation-build --output-template-file packaged.template.yaml",
-		"deploy": "sam deploy --template-file packaged.template.yaml --stack-name ulsmith-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
-		"migrate": "node migrate.mjs"
+		"package": "sam package --template-file template.yaml --s3-bucket ?????-cloudformation-build --output-template-file packaged.template.yaml",
+		"deploy": "sam deploy --template-file packaged.template.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
+		"package:testing": "sam package --template-file template.testing.yaml --s3-bucket ?????-cloudformation-build --output-template-file packaged.template.testing.yaml",
+		"deploy:testing": "sam deploy --template-file packaged.template.testing.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
+		"package:staging": "sam package --template-file template.staging.yaml --s3-bucket ?????-cloudformation-build --output-template-file packaged.template.staging.yaml",
+		"deploy:staging": "sam deploy --template-file packaged.template.staging.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
+		"package:production": "sam package --template-file template.production.yaml --s3-bucket ?????-cloudformation-build --output-template-file packaged.template.production.yaml",
+		"deploy:production": "sam deploy --template-file packaged.template.production.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
+		"migrate": "node migrate.mjs",
+		"migrate:testing": "SERVER=testing node migrate.mjs",
+		"migrate:staging": "SERVER=staging node migrate.mjs",
+		"migrate:production": "SERVER=production node migrate.mjs"
 	},
 	"dependencies": {
 		"crypto": "^1.0.1",
