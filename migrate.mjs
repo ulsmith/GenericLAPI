@@ -55,6 +55,11 @@
  * COMMIT;
  * 
  * @npm place a script inside package.js "migrate": "node migration/migrate.mjs" 
+ * @npm place a script inside package.js "migrate:testing": "SERVER=testing node migration/migrate.mjs" 
+ * @npm place a script inside package.js "migrate:staging": "SERVER=staging node migration/migrate.mjs" 
+ * @npm place a script inside package.js "migrate:production": "SERVER=production node migration/migrate.mjs" 
+ * 
+ * @NOTE add :testing to run migrate.testing.json e.g. npm run migrate:testing -- health
  * 
  * @command npm run migrate -- prepare
  * @detail prepare a migrate file for migration (any folder inside migration folder, even the migration folder)
@@ -70,6 +75,9 @@
  * 
  * @command npm run migrate -- list db_name
  * @detail list all migrations on specific database
+ * 
+ * @command npm run migrate -- parse dbname filepath
+ * @detail parse a specific file without tracking
  * 
  * @command npm run migrate -- up
  * @detail migrate all databases to latest migrations
