@@ -36,13 +36,13 @@ class Configuration extends Controller {
 
 		let configuration = new ConfigurationModel();
 		
-		return configuration.find({ 'key': event.pathParameters.key })
+		return configuration.find({ 'name_unique': event.pathParameters.name })
 			.then((rows) => {
 				if (rows.length !== 1) throw Error('Resource not found');
-				return rows[0].value;
+				return rows[0].data;
 			})
 			.catch((error) => {
-				throw new RestError('Could not find resource for key provided', 404);
+				throw new RestError('Could not find resource for name provided', 404);
 			});
 	}
 
@@ -59,12 +59,12 @@ class Configuration extends Controller {
 
 		let configuration = new ConfigurationModel();
 
-		return configuration.find({ 'key': event.pathParameters.key })
+		return configuration.find({ 'name_unique': event.pathParameters.name })
 			.then((rows) => {
 				if (rows.length === 1) throw new RestError('Resource already exists, could not add record', 400);
 			})
-			.then(() => configuration.insert({ key: event.pathParameters.key, value: event.parsedBody }, '*'))
-			.then((rows) => rows[0].value)
+			.then(() => configuration.insert({ name: event.pathParameters.name, value: event.parsedBody }, '*'))
+			.then((rows) => rows[0].data)
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
 				throw new RestError('Invalid data, could not add record', 400);
@@ -84,13 +84,13 @@ class Configuration extends Controller {
 
 		let configuration = new ConfigurationModel();
 
-		return configuration.find({ 'key': event.pathParameters.key })
+		return configuration.find({ 'name_unique': event.pathParameters.name })
 			.then((rows) => {
 				if (rows.length !== 1) throw Error('Resource not found');
 				return rows[0];
 			})
 			.then((row) => configuration.update(row.id, { value: event.parsedBody }, '*'))
-			.then((rows) => rows[0].value)
+			.then((rows) => rows[0].data)
 			.catch((error) => {
 				console.log(error);
 				if (error.name === 'RestError') throw error;
@@ -111,12 +111,12 @@ class Configuration extends Controller {
 
 		let configuration = new ConfigurationModel();
 
-		return configuration.find({ 'key': event.pathParameters.key })
+		return configuration.find({ 'name_unique': event.pathParameters.name })
 			.then((rows) => {
 				if (rows.length !== 1) throw Error('Resource not found');
 				return rows[0];
 			})
-			.then((row) => configuration.update(row.id, { value: { ...row.value, ...event.parsedBody }}))
+			.then((row) => configuration.update(row.id, { value: { ...row.data, ...event.parsedBody }}))
 			.then(() => 'Updated record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
@@ -138,7 +138,7 @@ class Configuration extends Controller {
 		// check partial dataset
 		let configuration = new ConfigurationModel();
 
-		return configuration.find({ 'key': event.pathParameters.key })
+		return configuration.find({ 'name_unique': event.pathParameters.name })
 			.then((rows) => {
 				if (rows.length !== 1) throw Error('Resource not found');
 				return rows[0];
@@ -147,7 +147,7 @@ class Configuration extends Controller {
 			.then(() => 'Deleted record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
-				throw new RestError('Invalid request, please use a valid key to delete this resource', 400);
+				throw new RestError('Invalid request, please use a valid name to delete this resource', 400);
 			});
 	}
 }

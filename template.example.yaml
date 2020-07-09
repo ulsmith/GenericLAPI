@@ -170,7 +170,7 @@ Resources:
         SystemConfigurationAny:
           Type: Api
           Properties:
-            Path: /system/configuration/{key}
+            Path: /system/configuration/{name}
             Method: any
 
   Health:
