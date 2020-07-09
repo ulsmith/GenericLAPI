@@ -63,7 +63,7 @@ class Configuration extends Controller {
 			.then((rows) => {
 				if (rows.length === 1) throw new RestError('Resource already exists, could not add record', 400);
 			})
-			.then(() => configuration.insert({ name_unique: event.pathParameters.name, value: event.parsedBody }, '*'))
+			.then(() => configuration.insert({ name_unique: event.pathParameters.name, data: event.parsedBody }, '*'))
 			.then((rows) => rows[0].data)
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
@@ -89,7 +89,7 @@ class Configuration extends Controller {
 				if (rows.length !== 1) throw Error('Resource not found');
 				return rows[0];
 			})
-			.then((row) => configuration.update(row.id, { value: event.parsedBody }, '*'))
+			.then((row) => configuration.update(row.id, { data: event.parsedBody }, '*'))
 			.then((rows) => rows[0].data)
 			.catch((error) => {
 				console.log(error);
@@ -116,7 +116,7 @@ class Configuration extends Controller {
 				if (rows.length !== 1) throw Error('Resource not found');
 				return rows[0];
 			})
-			.then((row) => configuration.update(row.id, { value: { ...row.data, ...event.parsedBody }}))
+			.then((row) => configuration.update(row.id, { data: { ...row.data, ...event.parsedBody }}))
 			.then(() => 'Updated record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
