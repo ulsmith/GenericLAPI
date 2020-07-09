@@ -63,7 +63,7 @@ class Configuration extends Controller {
 			.then((rows) => {
 				if (rows.length === 1) throw new RestError('Resource already exists, could not add record', 400);
 			})
-			.then(() => configuration.insert({ name: event.pathParameters.name, value: event.parsedBody }, '*'))
+			.then(() => configuration.insert({ name_unique: event.pathParameters.name, value: event.parsedBody }, '*'))
 			.then((rows) => rows[0].data)
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
