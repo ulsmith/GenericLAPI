@@ -41,7 +41,7 @@ class Authenticate extends Controller {
             event.parsedBody.identity, 
             event.parsedBody.identityType || 'email', 
             event.parsedBody.password, 
-            event.parsedBody.organisationUUID, 
+            event.parsedBody.organisationID, 
             event.requestContext.identity.userAgent,
             event.requestContext.identity.sourceIp
         );
@@ -57,7 +57,7 @@ class Authenticate extends Controller {
 	get(event) {
         return {
             user: {
-                uuid: this.$services.auth.user.uuid,
+                id: this.$services.auth.user.id,
                 name: this.$services.auth.user.name,
                 identity: this.$services.auth.user.identity,
                 identityType: this.$services.auth.user.identityType,
@@ -65,7 +65,7 @@ class Authenticate extends Controller {
                 loginPrevious: this.$services.auth.user.login_previous
             },
             organisation: {
-                uuid: this.$services.auth.organisation.uuid,
+                id: this.$services.auth.organisation.id,
                 name: this.$services.auth.organisation.name,
                 nameUnique: this.$services.auth.organisation.name_unique,
                 description: this.$services.auth.organisation.description

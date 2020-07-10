@@ -64,7 +64,7 @@ class Registration extends Controller {
 
         return userModel.getAuthedFromIdentity(event.parsedBody.identity, event.parsedBody.identityType)
             .then((usr) => {
-                if (usr && usr.uuid) return usr;
+                if (usr && usr.id) return usr;
                 
                 return registrationModel.find({ identity: event.parsedBody.identity, identity_type: event.parsedBody.identityType })
                     .then((reg) => {
@@ -105,7 +105,7 @@ class Registration extends Controller {
             .then((data) => {
                 let emailData = { systemName: this.$environment.HOST_NAME, systemUrl: this.$environment.HOST_ADDRESS, expireTime: Number(this.$environment.TOKEN_EXPIRE_SECONDS) / 60 }
 
-                if (data && data.uuid) {
+                if (data && data.id) {
                     emailData.name = data.name
                     emailData.link = this.$client.origin ? this.$client.origin.replace(/^\/|\/$/g, '') : this.$environment.HOST_ADDRESS;
                     return this.comms.emailSend(event.parsedBody.identity, this.$environment.EMAIL_FROM, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
@@ -155,7 +155,7 @@ class Registration extends Controller {
                 return regs[0];
             }))
             .then((reg) => userModel.getAuthedFromIdentity(event.parsedBody.identity, event.parsedBody.identityType).then((usr) => {
-                if (usr && usr.uuid) throw new RestError('User is already present on the system', 401);
+                if (usr && usr.id) throw new RestError('User is already present on the system', 401);
                 return reg;
             }))
             .then((reg) => userModel.add({

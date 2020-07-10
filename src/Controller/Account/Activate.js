@@ -54,7 +54,7 @@ class Activate extends Controller {
             })
             .then(() => userModel.getAuthedFromIdentity(key, 'email'))
             .then((usr) => {
-                if (!usr || !usr.uuid) throw new RestError('We could not activate this user, please try again.', 401);
+                if (!usr || !usr.id) throw new RestError('We could not activate this user, please try again.', 401);
                 return usr;
             })
             .then((usr) => userModel.update(usr.id, { active: true }))

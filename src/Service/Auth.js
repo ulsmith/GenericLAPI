@@ -39,7 +39,7 @@ class Auth extends Service {
      * @param {String} ip The resource to fetch with the given key
      * @return Promise a resulting promise with an error to feed back or data to send on
      */
-	login(identity, identityType, password, organisationUUID, userAgent, ip) {
+	login(identity, identityType, password, organisationID, userAgent, ip) {
 		if (!identity || !password) throw new RestError('Login details incorrect, please try again.', 401);
 		if (!!identityType && ['email', 'phone'].indexOf(identityType) < 0) throw new RestError('Login details incorrect, please try again.', 401);
 
@@ -52,20 +52,20 @@ class Auth extends Service {
 				if (!user) throw new RestError('Login details incorrect, please try again.', 401);
 				if (user.password !== Crypto.passwordHash(password, user.password.substring(0, user.password.length / 2))) throw new RestError('Login details incorrect, please try again.', 401);
 				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
-				
+
 				return user;
 			})
-			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({user: user, orgs: orgs})))		
+			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({ user: user, orgs: orgs })))
 			.then((userOrgs) => {
 				let org = userOrgs.orgs[0];
 
-				// we have more than one org, so user must remake request with org uuid, give them choice
+				// we have more than one org, so user must remake request with org id, give them choice
 				if (userOrgs.orgs.length > 1) {
-					let orgs = userOrgs.orgs.filter((data) => data.uuid === organisationUUID);
+					let orgs = userOrgs.orgs.filter((data) => data.id === organisationID);
 
 					if (org.length !== 1) {
 						throw new RestError({
-							'message': 'User is part of many organisations, please add [organisationUUID] to request.',
+							'message': 'User is part of many organisations, please add [organisationID] to request.',
 							'organisations': userOrgs.orgs
 						}, 403);
 					}
@@ -86,10 +86,10 @@ class Auth extends Service {
 						userOrgs.user.identity = identity;
 						userOrgs.user.identityType = identityType;
 
-						let result = { 
+						let result = {
 							token: this._generateJWT(userOrgs.user, org, userAgent),
 							user: {
-								uuid: userOrgs.user.uuid,
+								id: userOrgs.user.id,
 								name: userOrgs.user.name,
 								identity: identity,
 								identityType: identityType,
@@ -98,10 +98,10 @@ class Auth extends Service {
 							},
 							permissions: perms
 						};
-						
+
 						if (org) {
 							result.organisation = {
-								uuid: org.uuid,
+								id: org.id,
 								name: org.name,
 								nameUnique: org.name_unique,
 								description: org.description
@@ -125,17 +125,17 @@ class Auth extends Service {
 
 		try {
 			payload = this._verifyJWT(jwt);
-		} catch(error) {
+		} catch (error) {
 			if (error.name === 'TokenExpiredError') {
-				throw new RestError({ 
+				throw new RestError({
 					status: 'expired',
-					message: 'Authorization expired, please refresh expired token.', 
-					method: 'POST', 
+					message: 'Authorization expired, please refresh expired token.',
+					method: 'POST',
 					url: 'account/refresh',
-					body: {token: jwt}
+					body: { token: jwt }
 				}, 401);
 			}
-			
+
 			throw new RestError({
 				status: 'expired',
 				message: 'Authorization failed, please log in to authorize.',
@@ -151,26 +151,26 @@ class Auth extends Service {
 
 		let userModel = new UserModel();
 
-		return userModel.getAuthedFromUUID(payload.userUUID)
-			.then((user) => userModel.getUserOrganisation(user.id, payload.organisationUUID).then((org) => ({ user: user, org: org })))
-			.then((userOrg) => userModel.getAllPermisions(userOrg.user.id, userOrg.org.id).then((perms) => ({ user: userOrg.user, org: userOrg.org, perms: perms})))
+		return userModel.getAuthed(payload.userID)
+			.then((user) => userModel.getUserOrganisation(user.id, payload.organisationID).then((org) => ({ user: user, org: org })))
+			.then((userOrg) => userModel.getAllPermisions(userOrg.user.id, userOrg.org.id).then((perms) => ({ user: userOrg.user, org: userOrg.org, perms: perms })))
 			.then((userOrgPerms) => {
 				if (!userOrgPerms.user) throw new RestError('User not found, please try again.', 404);
 				if (!userOrgPerms.org) throw new RestError('Organisation not found, please try again later.', 404);
 				if (!userOrgPerms.user.active) throw new RestError('User is not active, please try again later.', 401);
-				
+
 				// cache user for system use
 				this.user = userOrgPerms.user;
 				this.user.identity = payload.userIdentity,
-				this.user.identityType = payload.userIdentityType,
-				this.organisation = userOrgPerms.org;
+					this.user.identityType = payload.userIdentityType,
+					this.organisation = userOrgPerms.org;
 				this.permissions = userOrgPerms.perms;
 				this.cache = {};
-				
+
 				// return basic user details when hit directly
-				return { 
+				return {
 					user: {
-						uuid: this.user.uuid,
+						id: this.user.id,
 						name: this.user.name,
 						identity: payload.userIdentity,
 						identityType: payload.userIdentityType,
@@ -178,7 +178,7 @@ class Auth extends Service {
 						loginPrevious: this.user.login_previous
 					},
 					organisation: {
-						uuid: this.organisation.uuid,
+						id: this.organisation.id,
 						name: this.organisation.name,
 						nameUnique: this.organisation.name_unique,
 						description: this.organisation.description
@@ -227,7 +227,7 @@ class Auth extends Service {
 
 		// no roles found
 		if (roles.length === 0) this.permissionDenied(role, type);
-		
+
 		// one role found
 		if (roles.length === 1) {
 			if (
@@ -239,7 +239,7 @@ class Auth extends Service {
 
 		// more than one role found
 		if (roles.length > 1) {
-			let reduced = roles.reduce((acc, cur) => ({read: acc.read || cur.read, write: acc.write || cur.write, delete: acc.delete || cur.delete}));
+			let reduced = roles.reduce((acc, cur) => ({ read: acc.read || cur.read, write: acc.write || cur.write, delete: acc.delete || cur.delete }));
 			if (
 				(types.length === 1 && !reduced[types[0].trim()])
 				|| (types.length === 2 && (!reduced[types[0].trim()] || !reduced[types[1].trim()]))
@@ -255,7 +255,7 @@ class Auth extends Service {
      * @param {String} type The access type to check
      */
 	permissionDenied(role, type) {
-		console.log(`[UserUUID: ${this.user.uuid}, OrgUUID: ${this.organisation.uuid}] No '${type}' access to '${role}' role`);
+		console.log(`[UserID: ${this.user.id}, OrgID: ${this.organisation.id}] No '${type}' access to '${role}' role`);
 		throw new RestError(`Permission denied, you do not have '${type}' access to this resource`, 403);
 	}
 
@@ -296,10 +296,10 @@ class Auth extends Service {
 			iat: Math.floor(Date.now() / 1000),
 			nbf: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + parseInt(this.$environment.JWT_EXPIRE_SECONDS),
-			userUUID: user.uuid,
+			userID: user.id,
 			userIdentity: user.identity,
 			userIdentityType: user.identityType,
-			organisationUUID: organisation ? organisation.uuid : undefined,
+			organisationID: organisation ? organisation.id : undefined,
 			userAgent: userAgent
 		}, process.env.JWT_KEY, { algorithm: 'HS256' });
 	}

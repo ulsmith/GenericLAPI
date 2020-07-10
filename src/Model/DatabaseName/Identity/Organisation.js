@@ -17,8 +17,8 @@ class Organisation extends Model {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-    constructor() {
-		super('database_name', 'identity.organisation');
+	constructor() {
+		super('database', 'identity.organisation');
 	}
 
     /**
@@ -34,14 +34,6 @@ class Organisation extends Model {
 			description: { type: 'string', required: true, description: 'Basic short description of organisation' }
 		};
 	}
-
-    /**
-	 * @public @method getFromUUID
-	 * @description Get a single resource in a single table by table id
-     * @param {String} uuid The resource uuid to get
-     * @return {Promise} a resulting promise of data or error on failure
-     */
-	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0]) }
 }
 
 module.exports = Organisation;

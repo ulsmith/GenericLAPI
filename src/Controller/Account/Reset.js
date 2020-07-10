@@ -72,7 +72,7 @@ class Reset extends Controller {
             })
             .then((usr) => {
                 return userAccount.update(usr.id, {
-                    password_reminder: Crypto.encodeToken('reset', usr.uuid, this.$environment.HOST_ADDRESS, this.$client.origin, this.$environment.TOKEN_EXPIRE_SECONDS, this.$environment.JWT_KEY, this.$environment.AES_KEY),
+                    password_reminder: Crypto.encodeToken('reset', usr.id, this.$environment.HOST_ADDRESS, this.$client.origin, this.$environment.TOKEN_EXPIRE_SECONDS, this.$environment.JWT_KEY, this.$environment.AES_KEY),
                     password_reminder_sent: new Date()
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
             })
@@ -112,7 +112,7 @@ class Reset extends Controller {
         let userAccount = new UserAccountModel();
 
         return Promise.resolve().then(() => Crypto.decodeToken('reset', event.pathParameters.token, this.$environment.JWT_KEY, this.$environment.AES_KEY))
-            .then((uuid) => userModel.getAuthedFromUUID(uuid))
+            .then((id) => userModel.getAuthed(id))
             .then((usr) => userIdentity.find({ user_id: usr.id, identity: event.parsedBody.identity, type: event.parsedBody.identityType }))
             .then((usr) => {
                 if (usr[0].identity !== event.parsedBody.identity) throw new RestError('Reset details incorrect, please try again.', 401)

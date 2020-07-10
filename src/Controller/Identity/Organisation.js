@@ -35,20 +35,20 @@ class Organisation extends Controller {
 		this.$services.auth.isPermitted('api.identity.organisation', 'read');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.user/organisation/system', 'read');
+		if (event.pathParameters.id === this.$services.auth.organisation.id) this.$services.auth.isPermitted('api.identity.organisation.user/organisation/system', 'read');
 		else this.$services.auth.isPermitted('api.identity.organisation.system', 'read');
 
 		let organisation = new OrganisationModel();
 		
-		return organisation.getFromUUID(event.pathParameters.uuid)
+		return organisation.get(event.pathParameters.id)
 			.then((org) => ({
-				uuid: org.uuid,
+				id: org.id,
 				active: org.active,
 				name: org.name,
 				nameUnique: org.name_unique,
 				description: org.description
 			})).catch((error) => {
-				throw new RestError('Could not find resource for UUID provided', 404);
+				throw new RestError('Could not find resource for ID provided', 404);
 			});
 	}
 
@@ -61,7 +61,7 @@ class Organisation extends Controller {
      */
 	post(event, context) {
 		// no path parameter allowed for post
-		if (event.pathParameters.uuid) throw new RestError('Method not allowed with UUID route parameter', 405);
+		if (event.pathParameters.id) throw new RestError('Method not allowed with ID route parameter', 405);
 
 		// check permissions for access, throws rest error on failure. system level access only
 		this.$services.auth.isPermitted('api.identity.organisation.system', 'read,write');
@@ -71,7 +71,7 @@ class Organisation extends Controller {
 
 		return organisation.insert(mapped, '*')
 			.then((orgs) => ({
-				uuid: orgs[0].uuid,
+				id: orgs[0].id,
 				active: orgs[0].active,
 				name: orgs[0].name,
 				nameUnique: orgs[0].name_unique,
@@ -94,19 +94,19 @@ class Organisation extends Controller {
 		this.$services.auth.isPermitted('api.identity.organisation', 'read,write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'read,write');
+		if (event.pathParameters.id === this.$services.auth.organisation.id) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'read,write');
 		else this.$services.auth.isPermitted('api.identity.organisation.system', 'read,write');
 
 		let organisation = new OrganisationModel();
 		let mapped = organisation.mapDataToColumn(event.parsedBody);
 
-		return organisation.getFromUUID(event.pathParameters.uuid)
+		return organisation.get(event.pathParameters.id)
 			.then((org) => { 
-				if (!org || !org.id) throw new RestError({ message: 'Could not find resource for UUID provided', ...organisation.parseError()}, 404);
+				if (!org || !org.id) throw new RestError({ message: 'Could not find resource for ID provided', ...organisation.parseError()}, 404);
 				return org;
 			})
-			.then((org) => organisation.update(org.id, mapped, ['uuid', 'active', 'name', 'name_unique', 'description']))
-			.then((orgs) => ({ uuid: orgs[0].uuid, active: orgs[0].active, nameUnique: orgs[0].name_unique, description: orgs[0].description }))
+			.then((org) => organisation.update(org.id, mapped, ['id', 'active', 'name', 'name_unique', 'description']))
+			.then((orgs) => ({ id: orgs[0].id, active: orgs[0].active, nameUnique: orgs[0].name_unique, description: orgs[0].description }))
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
 				throw new RestError({ message: 'Invalid request, could not update record', ...organisation.parseError(error)}, 400);
@@ -125,16 +125,16 @@ class Organisation extends Controller {
 		this.$services.auth.isPermitted('api.identity.organisation', 'write');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'write');
+		if (event.pathParameters.id === this.$services.auth.organisation.id) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'write');
 		else this.$services.auth.isPermitted('api.identity.organisation.system', 'write');
 
 		// check partial dataset
 		let organisation = new OrganisationModel();
 		let mapped = organisation.mapDataToColumn(event.parsedBody, true);
 
-		return organisation.getFromUUID(event.pathParameters.uuid)
+		return organisation.get(event.pathParameters.id)
 			.then((org) => {
-				if (!org || !org.id) throw new RestError({ message: 'Could not find resource for UUID provided', ...organisation.parseError() }, 404);
+				if (!org || !org.id) throw new RestError({ message: 'Could not find resource for ID provided', ...organisation.parseError() }, 404);
 				return org;
 			})
 			.then((org) => organisation.update(org.id, mapped))
@@ -157,22 +157,22 @@ class Organisation extends Controller {
 		this.$services.auth.isPermitted('api.identity.organisation', 'delete');
 
 		// if not your logged in organisation, check access, throws rest error if not allowed
-		if (event.pathParameters.uuid === this.$services.auth.organisation.uuid) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'delete');
+		if (event.pathParameters.id === this.$services.auth.organisation.id) this.$services.auth.isPermitted('api.identity.organisation.organisation/system', 'delete');
 		else this.$services.auth.isPermitted('api.identity.organisation.system', 'delete');
 
 		// check partial dataset
 		let organisation = new OrganisationModel();
 
-		return organisation.getFromUUID(event.pathParameters.uuid)
+		return organisation.get(event.pathParameters.id)
 			.then((org) => {
-				if (!org || !org.id) throw new RestError('Could not find resource for UUID provided', 404);
+				if (!org || !org.id) throw new RestError('Could not find resource for ID provided', 404);
 				return org;
 			})
 			.then((org) => organisation.delete(org.id))
 			.then(() => 'Deleted record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
-				throw new RestError('Invalid request, please use a valid uuid to delete this resource', 400);
+				throw new RestError('Invalid request, please use a valid id to delete this resource', 400);
 			});
 	}
 }

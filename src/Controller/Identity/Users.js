@@ -19,9 +19,9 @@ class Users extends Controller {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-    constructor() {
-        super();
-    }
+	constructor() {
+		super();
+	}
 
     /**
      * @public @method get
@@ -36,29 +36,29 @@ class Users extends Controller {
 
 		let user = new UserModel();
 
-		// return user.getDetailsFromUUID(event.pathParameters.uuid)
-		// 	.then((usr) => {
-		// 		if (!usr || !usr.id) throw new RestError('Could not find resource for UUID provided', 404);
-		// 		return usr;
-		// 	})
-		// 	.then((usr) => {
-		// 		if (event.pathParameters.uuid === this.$services.auth.user.uuid) return usr;
+		return user.getAllDetails()
+			.then((users) => {
+				// empty
+				if (users && users.length < 0) return usr;
 
-		// 		// not same user, need to check permissions further, related org or all permission
-		// 		if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.uuid) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read');
-		// 		else this.$services.auth.isPermitted('api.identity.user.system', 'read');
-				
-		// 		return usr;
-		// 	})	
-		// 	.then((usr) => ({
-		// 		uuid: usr.uuid,
-		// 		name: usr.name,
-		// 		active: usr.active,
-		// 		userIdentity: usr.user_identity,
-		// 	})).catch((error) => {
-		// 		if (error.name === 'RestError') throw error;
-		// 		throw new RestError('Could not find resource for UUID provided', 404);
-		// 	});
+				// only system access allowed for this
+				this.$services.auth.isPermitted('api.identity.user.system', 'read');
+
+				return users;
+			})
+			.then((users) => users.map((usr) => ({
+				id: usr.id,
+				name: usr.name,
+				active: usr.active,
+				userIdentity: usr.user_identity.map((ui) => ({
+					identity: ui.identity,
+					type: ui.type,
+					primary: ui.primary
+				}))
+			}))).catch((error) => {
+				if (error.name === 'RestError') throw error;
+				throw new RestError('Could not find resource for ID provided', 404);
+			});
 	}
 }
 

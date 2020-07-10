@@ -22,8 +22,8 @@ class User extends Model {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor () {
-		super('database_name', 'identity.user');
+	constructor() {
+		super('database', 'identity.user');
 	}
 
     /**
@@ -37,77 +37,119 @@ class User extends Model {
 			name: { type: 'string', required: true, description: 'Full user name' }
 		};
 	}
-	
-	/**
-	 * @public @method getFromUUID
-	 * @description Get a single resource in a single table by table id
-     * @param {String} uuid The resource uuid to get
-     * @return {Promise} a resulting promise of data or error on failure
-     */
-	getFromUUID(uuid) { return this.model.where({ uuid: uuid }).limit(1).then((data) => data[0]) }
 
 	/**
-	 * @public @method getWithMetaFromUUID
-	 * @description Get a single resource with accompanying meta table data
-     * @param {String} uuid The resource uuid to get
+	 * @public @method getDetails
+	 * @description Get details for all users
      * @return {Promise} a resulting promise of data or error on failure
      */
-	getDetailsFromUUID(uuid) { 
+	getAllDetails() {
 		return this.db
 			.select(
-				'user.*', 
+				'user.*',
 				'user_identity.id AS user_identity_id',
 				'user_identity.identity AS user_identity_identity',
 				'user_identity.type AS user_identity_type',
 				'user_identity.primary AS user_identity_primary',
-				'organisation.uuid AS organisation_uuid'
+				'organisation.id AS organisation_id',
+				'organisation.name AS organisation_name'
 			)
 			.from('identity.user')
 			.leftJoin('identity.user_account', 'user.id', 'user_account.user_id')
 			.leftJoin('identity.user_identity', 'user.id', 'user_identity.user_id')
 			.leftJoin('identity.user__department', 'user.id', 'user__department.user_id')
 			.leftJoin('identity.organisation', 'user__department.department_organisation_id', 'organisation.id')
-			.where({ 'user.uuid': uuid })
-			.then((data) => {
-				if (data.length < 1) return;
-				
-				let inflate = {user_identity: [], organisation: []};
-				let idents = [];
-				for (let i = 0; i < data.length; i++) {
-					inflate.id = data[i].id;
-					inflate.uuid = data[i].uuid;
-					inflate.name = data[i].name;
-					inflate.active = data[i].active;
-					if (data[i].user_identity_id && idents.indexOf(data[i].user_identity_id) < 0) inflate.user_identity.push({id: data[i].user_identity_id, identity: data[i].user_identity_identity, type: data[i].user_identity_type, primary: data[i].user_identity_primary});
-					if (data[i].organisation_uuid && inflate.organisation.indexOf(data[i].organisation_uuid) < 0) inflate.organisation.push(data[i].organisation_uuid);
-					idents.push(data[i].user_identity_id);
+			.then((rows) => {
+				if (rows.length < 1) [];
+
+				let users = {};
+				let ui_ids = [];
+				let org_ids = [];
+				for (let row of rows) {
+					if (!users[row.id]) users[row.id] = { id: row.id, name: row.name, active: row.active, user_identity: [], organisation: [] };
+
+					if (row.user_identity_id && ui_ids.indexOf(row.user_identity_id) < 0) {
+						users[row.id].user_identity.push({ id: row.user_identity_id, identity: row.user_identity_identity, type: row.user_identity_type, primary: row.user_identity_primary });
+						ui_ids.push(row.user_identity_id);
+					}
+
+					if (row.organisation_id && org_ids.indexOf(row.organisation_id) < 0) {
+						users[row.id].organisation.push({ id: row.organisation_id, name: row.organisation_name });
+						ui_ids.push(row.organisation_id);
+					}
 				}
-				
-				return inflate;
+
+				return Object.values(users);
+			});
+	}
+
+	/**
+	 * @public @method getDetails
+	 * @description Get a single resource with accompanying meta table data
+     * @param {String} id The resource id to get
+     * @return {Promise} a resulting promise of data or error on failure
+     */
+	getDetails(id) {
+		return this.db
+			.select(
+				'user.*',
+				'user_identity.id AS user_identity_id',
+				'user_identity.identity AS user_identity_identity',
+				'user_identity.type AS user_identity_type',
+				'user_identity.primary AS user_identity_primary',
+				'organisation.id AS organisation_id',
+				'organisation.name AS organisation_name'
+			)
+			.from('identity.user')
+			.leftJoin('identity.user_account', 'user.id', 'user_account.user_id')
+			.leftJoin('identity.user_identity', 'user.id', 'user_identity.user_id')
+			.leftJoin('identity.user__department', 'user.id', 'user__department.user_id')
+			.leftJoin('identity.organisation', 'user__department.department_organisation_id', 'organisation.id')
+			.where({ 'user.id': id })
+			.then((rows) => {
+				if (rows.length < 1) { };
+
+				let users = {};
+				let ui_ids = [];
+				let org_ids = [];
+				for (let row of rows) {
+					if (!users[row.id]) users[row.id] = { id: row.id, name: row.name, active: row.active, user_identity: [], organisation: [] };
+
+					if (row.user_identity_id && ui_ids.indexOf(row.user_identity_id) < 0) {
+						users[row.id].user_identity.push({ id: row.user_identity_id, identity: row.user_identity_identity, type: row.user_identity_type, primary: row.user_identity_primary });
+						ui_ids.push(row.user_identity_id);
+					}
+
+					if (row.organisation_id && org_ids.indexOf(row.organisation_id) < 0) {
+						users[row.id].organisation.push({ id: row.organisation_id, name: row.organisation_name });
+						ui_ids.push(row.organisation_id);
+					}
+				}
+
+				return Object.values(users)[0] || {};
 			});
 	}
 
     /**
-     * @public @method getAuthedFromUUID
-     * @description Get user data from UUID of user, pushed direct to UI
-     * @param {String} uuid The GUID to search for
+     * @public @method getAuthed
+     * @description Get user data from id of user, pushed direct to UI
+     * @param {String} id The GUID to search for
      * @return Promise a response promise resolved or rejected with a raw payload or {status: ..., data: ..., headers: ...} payload
 	 * 
 	 * SELECT
-	 * 	"identity".user.uuid,
+	 * 	"identity".user.id,
 	 * 	"identity".user_account.login_current,
 	 * 	"identity".user_account.login_previous
 	 * FROM "identity".user
 	 * JOIN "identity".user_identity ON "identity".user.id = "identity".user_identity.user_id
 	 * JOIN "identity".user_account ON "identity".user.id = "identity".user_account.user_id
-	 * WHERE "identity".user.uuid = '...'
+	 * WHERE "identity".user.id = '...'
 	 * LIMIT 1;
      */
-	getAuthedFromUUID(uuid) {
+	getAuthed(id) {
 		return this.db
 			.select(
 				'user.id',
-				'user.uuid',
 				'user.name',
 				'user.active',
 				'user_account.user_agent',
@@ -117,7 +159,7 @@ class User extends Model {
 			.from('identity.user')
 			.join('identity.user_identity', 'user.id', 'user_identity.user_id')
 			.join('identity.user_account', 'user.id', 'user_account.user_id')
-			.where('user.uuid', uuid)
+			.where('user.id', id)
 			.limit(1)
 			.then((data) => data[0] || undefined);
 	}
@@ -131,7 +173,6 @@ class User extends Model {
 	 *
 	 * SELECT
 	 * 	"identity".user.id,
-	 * 	"identity".user.uuid,
 	 * 	"identity".user.name,
 	 * 	"identity".user.active,
 	 * 	"identity".user_account.password,
@@ -148,7 +189,6 @@ class User extends Model {
 		return this.db
 			.select(
 				'user.id',
-				'user.uuid',
 				'user.name',
 				'user.active',
 				'user_account.password',
@@ -176,7 +216,6 @@ class User extends Model {
 	 *
 	 * SELECT DISTINCT
 	 *	"organisation"."id",
-	 *	"organisation"."uuid",
 	 *	"organisation"."name",
 	 *	"organisation"."name_unique",
 	 *	"organisation"."description"
@@ -188,7 +227,6 @@ class User extends Model {
 		return this.db
 			.select(
 				'organisation.id',
-				'organisation.uuid',
 				'organisation.name',
 				'organisation.name_unique',
 				'organisation.active',
@@ -204,12 +242,11 @@ class User extends Model {
      * @public @method getUserOrganisation
      * @description Get authed user for logging in
      * @param {Number} userID The user id to fetch org for
-     * @param {Number} organisationUUID The organisation uuid to fetch org for
+     * @param {Number} organisationID The organisation id to fetch org for
      * @return Promise a resulting promise with an error to feed back or data to send on
 	 *
 	 * SELECT DISTINCT
 	 *	"organisation"."id",
-	 *	"organisation"."uuid",
 	 *	"organisation"."name",
 	 *	"organisation"."name_unique",
 	 *	"organisation"."description"
@@ -217,13 +254,12 @@ class User extends Model {
 	 * JOIN "identity"."organisation" ON "organisation"."id" = "user__department"."department_organisation_id"
 	 * WHERE "user__department"."user_id" = 1
      */
-	getUserOrganisation(userID, organisationUUID) {
-		if (!organisationUUID) return Promise.resolve([]);
+	getUserOrganisation(userID, organisationID) {
+		if (!organisationID) return Promise.resolve([]);
 
 		return this.db
 			.select(
 				'organisation.id',
-				'organisation.uuid',
 				'organisation.name',
 				'organisation.name_unique',
 				'organisation.active',
@@ -232,7 +268,7 @@ class User extends Model {
 			.from('identity.user__department')
 			.join('identity.organisation', 'organisation.id', 'user__department.department_organisation_id')
 			.where('user__department.user_id', userID)
-			.where('organisation.uuid', organisationUUID)
+			.where('organisation.id', organisationID)
 			.limit(1)
 			.then((data) => data[0] || undefined);
 	}
@@ -268,6 +304,10 @@ class User extends Model {
 	 * ORDER BY "role"."name_unique" ASC;
      */
 	getAllPermisions(userID, organisationID) {
+		// convert UUID to raw due to using them on joins
+		let rUserID = this.db.raw('?', userID);
+		let rOrgID = this.db.raw('?', organisationID || null);
+
 		return this.db
 			.select(
 				'role.name_unique AS role',
@@ -276,8 +316,8 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user', 'user.id', rUserID)
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', rUserID).andOn('user__department.department_organisation_id', '=', rOrgID) })
 			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
 			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
 			.leftJoin('identity.user__group', 'user__group.user_id', 'user.id')
@@ -322,6 +362,10 @@ class User extends Model {
 	 * ORDER BY "role"."name_unique" ASC;
      */
 	getPermisions(match, userID, organisationID) {
+		// convert UUID to raw due to using them on joins
+		let rUserID = this.db.raw('?', userID);
+		let rOrgID = this.db.raw('?', organisationID || null);
+
 		return this.db
 			.select(
 				'role.name_unique AS role',
@@ -330,8 +374,8 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user', 'user.id', rUserID)
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', rUserID).andOn('user__department.department_organisation_id', '=', rOrgID) })
 			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
 			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
 			.leftJoin('identity.user__group', 'user__group.user_id', 'user.id')
@@ -377,6 +421,10 @@ class User extends Model {
 	 * LIMIT 1;
      */
 	getPermision(match, userID, organisationID) {
+		// convert UUID to raw due to using them on joins
+		let rUserID = this.db.raw('?', userID);
+		let rOrgID = this.db.raw('?', organisationID || null);
+
 		return this.db
 			.select(
 				'role.name_unique AS role',
@@ -385,8 +433,8 @@ class User extends Model {
 				this.db.raw('COALESCE(bool_or("user__role"."delete") OR bool_or("department__role"."delete") OR bool_or("user__group__role"."delete") OR bool_or("department__group__role"."delete"), FALSE) AS "delete"')
 			)
 			.from('identity.role')
-			.leftJoin('identity.user', 'user.id', userID)
-			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', userID).andOn('user__department.department_organisation_id', '=', organisationID || 0) })
+			.leftJoin('identity.user', 'user.id', rUserID)
+			.leftJoin('identity.user__department', function () { this.on('user__department.user_id', '=', rUserID).andOn('user__department.department_organisation_id', '=', rOrgID) })
 			.leftJoin('identity.user__role', function () { this.on('user__role.role_id', '=', 'role.id').andOn('user__role.user_id', '=', 'user.id') })
 			.leftJoin('identity.department__role', function () { this.on('department__role.role_id', '=', 'role.id').andOn('department__role.department_id', '=', 'user__department.department_id') })
 			.leftJoin('identity.user__group', 'user__group.user_id', 'user__department.user_id')
@@ -410,7 +458,7 @@ class User extends Model {
 		let userAccount = new UserAccountModel();
 		let userGroup = new UserGroupModel();
 		let uMapped, uiMapped, uaMapped;
-		
+
 		return Promise.resolve().then(() => {
 			// map data, checking integrity
 			uMapped = this.mapDataToColumn(data);
@@ -418,7 +466,7 @@ class User extends Model {
 			uaMapped = userAccount.mapDataToColumn(data.userAccount);
 		}).catch((error) => {
 			// manage error, parse and re-throw
-			if (error.name === 'SystemError') throw new SystemError(error.message, {user: {...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns}});
+			if (error.name === 'SystemError') throw new SystemError(error.message, { user: { ...this.columns, userIdentity: [userIdentity.columns], userAccount: userAccount.columns } });
 			throw error;
 		}).then(() => {
 			// perform add new user, identities and account data, rollback on failure
@@ -431,7 +479,7 @@ class User extends Model {
 							return userIdentity.transactInsert(trx, uiMapped, ['id', 'identity', 'type', 'primary'])
 								.then((ui) => ({ ...usrs[0], ...{ userIdentity: ui } }))
 								.catch((error) => {
-									throw new SystemError('Invalid data, could not add record', {...userIdentity.parseError(error), userIdentity: userIdentity.columns });
+									throw new SystemError('Invalid data, could not add record', { ...userIdentity.parseError(error), userIdentity: userIdentity.columns });
 								});
 						}
 
@@ -458,7 +506,7 @@ class User extends Model {
 								throw new SystemError('Invalid data, could not add record');
 							});
 					})
-					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
+					.then((usr) => ({ id: usr.id, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
 					.then(trx.commit)
 					.catch(trx.rollback);
 			})
@@ -488,82 +536,82 @@ class User extends Model {
 			if (uaMapped && uaMapped.password !== undefined && uaMapped.password.length < 1) throw new RestError('Password cannot be empty', 400);
 			if (uaMapped && !!uaMapped.password && (!data.userAccount || !data.userAccount.currentPassword)) throw new SystemError('Must include current password when changing password');
 		})
-		.then(() => {
-			if (!uaMapped || uaMapped.password === undefined) return;
-			return userAccount.get(id).then((usracc) => {
-				if (usracc.password !== Crypto.passwordHash(data.userAccount.currentPassword, usracc.password.substring(0, usracc.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
-			});
-		})
-		.catch((error) => {
-			// manage error, parse and re-throw
-			if (error.name === 'SystemError') throw new SystemError(error.message, {
-				user: {
-					...this.columns, 
-					userIdentity: [userIdentity.columns], 
-					userAccount: {
-						...userAccount.columns, 
-						currentPassword: {
-							"type": "string",
-							"required": true,
-							"description": "Current user password"
+			.then(() => {
+				if (!uaMapped || uaMapped.password === undefined) return;
+				return userAccount.get(id).then((usracc) => {
+					if (usracc.password !== Crypto.passwordHash(data.userAccount.currentPassword, usracc.password.substring(0, usracc.password.length / 2))) throw new SystemError('Current password is incorrect, unable to change password');
+				});
+			})
+			.catch((error) => {
+				// manage error, parse and re-throw
+				if (error.name === 'SystemError') throw new SystemError(error.message, {
+					user: {
+						...this.columns,
+						userIdentity: [userIdentity.columns],
+						userAccount: {
+							...userAccount.columns,
+							currentPassword: {
+								"type": "string",
+								"required": true,
+								"description": "Current user password"
+							}
 						}
-					} 
-				} 
-			});
-			throw error;
-		}).then(() => {
-			// perform edit user, identities and account data, rollback on failure
-			return this.transaction((trx) => {
-				return Promise.resolve()
-					.then(() => {
-						if (uMapped) return this.transactUpdate(trx, id, uMapped, '*');
-						return this.get(id);
-					})
-					.then((usr) => {
-						// update identities attached to this user
-						if (uiMapped && uiMapped.length > 0) {
-							let identities = [];
-							for (let i = 0; i < data.userIdentity.length; i++) {
-								identities.push(
-									userIdentity.transactUpdate(trx, { id: data.userIdentity[i].id, user_id: id}, uiMapped[i], ['id', 'identity', 'type', 'primary'])
-								);
+					}
+				});
+				throw error;
+			}).then(() => {
+				// perform edit user, identities and account data, rollback on failure
+				return this.transaction((trx) => {
+					return Promise.resolve()
+						.then(() => {
+							if (uMapped) return this.transactUpdate(trx, id, uMapped, '*');
+							return this.get(id);
+						})
+						.then((usr) => {
+							// update identities attached to this user
+							if (uiMapped && uiMapped.length > 0) {
+								let identities = [];
+								for (let i = 0; i < data.userIdentity.length; i++) {
+									identities.push(
+										userIdentity.transactUpdate(trx, { id: data.userIdentity[i].id, user_id: id }, uiMapped[i], ['id', 'identity', 'type', 'primary'])
+									);
+								}
+
+								// splice id into error response, dont want it in normally but we are updating from user resource for convenience!
+								return Promise.all(identities).then((uis) => ({ ...usr, ...{ userIdentity: uis.map((ui) => ui[0]) } }))
+									.catch((error) => {
+										throw new SystemError('Invalid data, could not update record', {
+											...userIdentity.parseError(error), userIdentity: {
+												...userIdentity.columns, "id": {
+													"type": "uuid",
+													"required": true,
+													"description": "User identity ID"
+												}
+											}
+										});
+									});
 							}
 
-							// splice id into error response, dont want it in normally but we are updating from user resource for convenience!
-							return Promise.all(identities).then((uis) => ({ ...usr, ...{ userIdentity: uis.map((ui) => ui[0]) } }))
-								.catch((error) => {
-									throw new SystemError('Invalid data, could not update record', {
-										...userIdentity.parseError(error), userIdentity: {
-											...userIdentity.columns, "id": {
-												"type": "serial",
-												"required": true,
-												"description": "User identity ID"
-											}
-										}
+							return usr;
+						})
+						.then((usr) => {
+							// update account, only need to use user id here as 1 to 1 table. dont return anything
+							if (uaMapped) {
+								uaMapped.password = Crypto.passwordHash(uaMapped.password);
+								return userAccount.transactUpdate(trx, { user_id: id }, uaMapped)
+									.then(() => usr)
+									.catch((error) => {
+										throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
 									});
-								});
-						}
+							}
 
-						return usr;
-					})
-					.then((usr) => {
-						// update account, only need to use user id here as 1 to 1 table. dont return anything
-						if (uaMapped) {
-							uaMapped.password = Crypto.passwordHash(uaMapped.password);
-							return userAccount.transactUpdate(trx, { user_id: id }, uaMapped)
-								.then(() => usr)
-								.catch((error) => {
-									throw new SystemError('Invalid data, could not add record', { ...userAccount.parseError(error), userAccount: userAccount.columns });
-								});
-						}
-						
-						return usr;
-					})
-					.then((usr) => ({ uuid: usr.uuid, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
-					.then(trx.commit)
-					.catch(trx.rollback);
+							return usr;
+						})
+						.then((usr) => ({ id: usr.id, name: usr.name, active: usr.active, userIdentity: usr.userIdentity }))
+						.then(trx.commit)
+						.catch(trx.rollback);
+				});
 			});
-		});
 	}
 }
 
