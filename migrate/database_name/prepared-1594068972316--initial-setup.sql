@@ -1,9 +1,8 @@
 -- @timestamp 1594068972316 --
 -- @type postgres --
--- @database database_name --
+-- @database database --
 -- @name initial-setup --
 -- @author Paul Smith --
--- @copywrite n/a --
 -- @date 2020-07-06 --
 
 -- @up --
@@ -32,7 +31,7 @@ CREATE TYPE "public"."communication_type" AS ENUM (
 );
 
 CREATE TABLE "public"."migrate" (
-  "id" SERIAL,
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "completed" timestamp,
@@ -42,7 +41,7 @@ CREATE TABLE "public"."migrate" (
 );
 
 CREATE TABLE "public"."configuration" (
-  "id" SERIAL,
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "name_unique" text NOT NULL,
@@ -51,8 +50,8 @@ CREATE TABLE "public"."configuration" (
 );
 
 CREATE TABLE "identity"."department" (
-  "id" SERIAL,
-  "organisation_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "organisation_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -64,10 +63,10 @@ CREATE TABLE "identity"."department" (
 );
 
 CREATE TABLE "identity"."department__group" (
-  "id" SERIAL,
-  "department_id" integer NOT NULL,
-  "department_organisation_id" integer NOT NULL,
-  "group_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "department_id" uuid NOT NULL,
+  "department_organisation_id" uuid NOT NULL,
+  "group_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -75,10 +74,10 @@ CREATE TABLE "identity"."department__group" (
 );
 
 CREATE TABLE "identity"."department__role" (
-  "id" SERIAL,
-  "department_id" integer NOT NULL,
-  "department_organisation_id" integer NOT NULL,
-  "role_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "department_id" uuid NOT NULL,
+  "department_organisation_id" uuid NOT NULL,
+  "role_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -89,7 +88,7 @@ CREATE TABLE "identity"."department__role" (
 );
 
 CREATE TABLE "identity"."group" (
-  "id" SERIAL,
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -100,9 +99,9 @@ CREATE TABLE "identity"."group" (
 );
 
 CREATE TABLE "identity"."group__role" (
-  "id" SERIAL,
-  "group_id" integer NOT NULL,
-  "role_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "group_id" uuid NOT NULL,
+  "role_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -113,8 +112,7 @@ CREATE TABLE "identity"."group__role" (
 );
 
 CREATE TABLE "identity"."organisation" (
-  "id" SERIAL,
-  "uuid" uuid NOT NULL DEFAULT uuid_generate_v4(),
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -126,7 +124,7 @@ CREATE TABLE "identity"."organisation" (
 );
 
 CREATE TABLE "identity"."registration" (
-  "id" SERIAL,
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -141,7 +139,7 @@ CREATE TABLE "identity"."registration" (
 );
 
 CREATE TABLE "identity"."role" (
-  "id" SERIAL,
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -152,8 +150,7 @@ CREATE TABLE "identity"."role" (
 );
 
 CREATE TABLE "identity"."user" (
-  "id" SERIAL,
-  "uuid" uuid NOT NULL DEFAULT uuid_generate_v4(),
+  "id" uuid DEFAULT uuid_generate_v4(),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -165,9 +162,9 @@ CREATE TABLE "identity"."user" (
 );
 
 CREATE TABLE "identity"."user__group" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
-  "group_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
+  "group_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -175,10 +172,10 @@ CREATE TABLE "identity"."user__group" (
 );
 
 CREATE TABLE "identity"."user__department" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
-  "department_id" integer NOT NULL,
-  "department_organisation_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
+  "department_id" uuid NOT NULL,
+  "department_organisation_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -186,9 +183,9 @@ CREATE TABLE "identity"."user__department" (
 );
 
 CREATE TABLE "identity"."user__role" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
-  "role_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
+  "role_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -199,8 +196,8 @@ CREATE TABLE "identity"."user__role" (
 );
 
 CREATE TABLE "identity"."user_account" (
-  "id" SERIAL,
-  "user_id" integer UNIQUE NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid UNIQUE NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -215,8 +212,8 @@ CREATE TABLE "identity"."user_account" (
 );
 
 CREATE TABLE "identity"."user_identity" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -227,8 +224,8 @@ CREATE TABLE "identity"."user_identity" (
 );
 
 CREATE TABLE "identity"."user_api" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -240,8 +237,8 @@ CREATE TABLE "identity"."user_api" (
 );
 
 CREATE TABLE "identity"."user_config" (
-  "id" SERIAL,
-  "user_id" integer NOT NULL,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid NOT NULL,
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
   "deleted" timestamp,
@@ -250,8 +247,8 @@ CREATE TABLE "identity"."user_config" (
 );
 
 CREATE TABLE "log"."log_user" (
-  "id" SERIAL,
-  "user_id" integer,
+  "id" uuid DEFAULT uuid_generate_v4(),
+  "user_id" uuid,
   "created_date" date NOT NULL DEFAULT (now()),
   "created" timestamp NOT NULL DEFAULT (now()),
   "updated" timestamp NOT NULL DEFAULT (now()),
@@ -318,12 +315,10 @@ CREATE UNIQUE INDEX ON "identity"."department__group" ("department_id", "group_i
 CREATE UNIQUE INDEX ON "identity"."department__role" ("department_id", "role_id");
 CREATE UNIQUE INDEX ON "identity"."group" ("name_unique");
 CREATE UNIQUE INDEX ON "identity"."group__role" ("group_id", "role_id");
-CREATE UNIQUE INDEX ON "identity"."organisation" ("uuid");
 CREATE UNIQUE INDEX ON "identity"."organisation" ("name_unique");
 CREATE UNIQUE INDEX ON "identity"."registration" ("identity");
 CREATE UNIQUE INDEX ON "identity"."registration" ("token");
 CREATE UNIQUE INDEX ON "identity"."role" ("name_unique");
-CREATE UNIQUE INDEX ON "identity"."user" ("uuid");
 CREATE UNIQUE INDEX ON "identity"."user__group" ("user_id", "group_id");
 CREATE UNIQUE INDEX ON "identity"."user__department" ("user_id", "department_id");
 CREATE UNIQUE INDEX ON "identity"."user__role" ("user_id", "role_id");
@@ -352,11 +347,214 @@ ALTER TABLE "identity"."user_api" ADD FOREIGN KEY ("user_id") REFERENCES "identi
 ALTER TABLE "identity"."user_config" ADD FOREIGN KEY ("user_id") REFERENCES "identity"."user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "log"."log_user" ADD FOREIGN KEY ("user_id") REFERENCES "identity"."user" ("id") ON DELETE NO ACTION ON UPDATE CASCADE;
 
+-- READ
+
+-- roles for db
+CREATE ROLE "database_read";
+
+-- grant access to db
+GRANT CONNECT ON DATABASE "database" TO "database_read";
+
+-- grant usage access to schemas
+GRANT USAGE ON SCHEMA "public" TO "database_read";
+GRANT USAGE ON SCHEMA "identity" TO "database_read";
+GRANT USAGE ON SCHEMA "log" TO "database_read";
+
+-- grant select access to existing tables
+GRANT SELECT ON ALL TABLES IN SCHEMA "public" TO "database_read";
+GRANT SELECT ON ALL TABLES IN SCHEMA "identity" TO "database_read";
+GRANT SELECT ON ALL TABLES IN SCHEMA "log" TO "database_read";
+
+-- grant select access to all future tables
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT SELECT ON TABLES TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT SELECT ON TABLES TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT SELECT ON TABLES TO "database_read";
+
+-- grant usage on sequences
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA "public" TO "database_read";
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA "identity" TO "database_read";
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA "log" TO "database_read";
+
+-- grant usage on sequences to all future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT USAGE ON SEQUENCES TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT USAGE ON SEQUENCES TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT USAGE ON SEQUENCES TO "database_read";
+
+-- grant execute on functions
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "public" TO "database_read";
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "identity" TO "database_read";
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "log" TO "database_read";
+
+-- grant execute on function to all future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT EXECUTE ON FUNCTIONS TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT EXECUTE ON FUNCTIONS TO "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT EXECUTE ON FUNCTIONS TO "database_read";
+
+-- grant usage on types
+GRANT USAGE ON TYPE "public"."communication_type" TO "database_read";
+
+-- grant execute on types to all future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT USAGE ON TYPES TO "database_read";
+
+-- READ WRITE
+
+-- roles for db
+CREATE ROLE "database_read_write";
+
+-- grant access to db
+GRANT CONNECT ON DATABASE "database" TO "database_read_write";
+
+-- grant read write access to schemas
+GRANT USAGE, CREATE ON SCHEMA "public" TO "database_read_write";
+GRANT USAGE, CREATE ON SCHEMA "identity" TO "database_read_write";
+GRANT USAGE, CREATE ON SCHEMA "log" TO "database_read_write";
+
+-- grant read write access to existing tables
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "public" TO "database_read_write";
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "identity" TO "database_read_write";
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA "log" TO "database_read_write";
+
+-- grant read write access to all future tables
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "database_read_write";
+
+-- grant read write access to sequence for serials and new create of sequences on existing
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "public" TO "database_read_write";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "identity" TO "database_read_write";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA "log" TO "database_read_write";
+
+-- grant read write access to sequence for serials and new create of sequences on future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT USAGE, SELECT ON SEQUENCES TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT USAGE, SELECT ON SEQUENCES TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT USAGE, SELECT ON SEQUENCES TO "database_read_write";
+
+-- grant execute on functions
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "public" TO "database_read_write";
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "identity" TO "database_read_write";
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA "log" TO "database_read_write";
+
+-- grant execute on function to all future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT EXECUTE ON FUNCTIONS TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" GRANT EXECUTE ON FUNCTIONS TO "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" GRANT EXECUTE ON FUNCTIONS TO "database_read_write";
+
+-- grant usage on types
+GRANT USAGE ON TYPE "public"."communication_type" TO "database_read_write";
+
+-- grant execute on types to all future
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT USAGE ON TYPES TO "database_read_write";
+
+-- USER
+
+-- create a new users for db
+CREATE USER "database_api" WITH PASSWORD 'fjlf78943.,vier78y219fj,knsdn.beh';
+
+-- grant user access
+GRANT "database_read_write" TO "database_api";
+
 COMMIT;
 
 -- @down --
 
 BEGIN;
+
+-- USER
+
+-- drop new users for db
+DROP USER "database_api";
+
+-- READ
+
+-- revoke read
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "public" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "public" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "public" FROM "database_read";
+REVOKE ALL PRIVILEGES ON TYPE "public"."communication_type" FROM "database_read";
+
+-- revoke future read
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public"  REVOKE ALL PRIVILEGES ON TYPES FROM "database_read";
+
+-- revoke read
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "identity" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "identity" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "identity" FROM "database_read";
+
+-- revoke future read
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read";
+
+-- revoke read
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "log" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "log" FROM "database_read";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "log" FROM "database_read";
+
+-- revoke future read
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read";
+
+-- revoke scheme read
+REVOKE ALL PRIVILEGES ON SCHEMA "public" FROM "database_read";
+REVOKE ALL PRIVILEGES ON SCHEMA "identity" FROM "database_read";
+REVOKE ALL PRIVILEGES ON SCHEMA "log" FROM "database_read";
+
+-- revoke db read
+REVOKE ALL PRIVILEGES ON DATABASE "database" FROM "database_read";
+
+-- drop read
+DROP ROLE "database_read";
+
+-- READ WRITE
+
+-- revoke read write
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "public" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "public" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "public" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON TYPE "public"."communication_type" FROM "database_read_write";
+
+-- revoke future read write
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "public"  REVOKE ALL PRIVILEGES ON TYPES FROM "database_read_write";
+
+-- revoke read write
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "identity" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "identity" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "identity" FROM "database_read_write";
+
+-- revoke future read write
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "identity" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read_write";
+
+-- revoke read write
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA "log" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA "log" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA "log" FROM "database_read_write";
+
+-- revoke future read write
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON TABLES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON SEQUENCES FROM "database_read_write";
+ALTER DEFAULT PRIVILEGES IN SCHEMA "log" REVOKE ALL PRIVILEGES ON FUNCTIONS FROM "database_read_write";
+
+-- revoke read write scheme
+REVOKE ALL PRIVILEGES ON SCHEMA "public" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON SCHEMA "identity" FROM "database_read_write";
+REVOKE ALL PRIVILEGES ON SCHEMA "log" FROM "database_read_write";
+
+-- grant read write db
+REVOKE ALL PRIVILEGES ON DATABASE "database" FROM "database_read_write";
+
+-- drop read write
+DROP ROLE "database_read_write";
+
+-- TABLES
 
 DROP TABLE IF EXISTS "public"."migrate";
 DROP TABLE IF EXISTS "public"."configuration";
