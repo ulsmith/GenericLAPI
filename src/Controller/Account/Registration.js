@@ -41,13 +41,6 @@ class Registration extends Controller {
 	 */
     static get post() { return 'public' }
 
-	/**
-	 * @public @static @get get
-	 * @desciption Get the access level for the post method. All methods are restricted by default.
-	 * @return {Object} Object of access levels for methods
-	 */
-    static get patch() { return 'public' }
-
     /**
      * @public @method post
      * @description Log in to the back end with a post request
@@ -111,7 +104,7 @@ class Registration extends Controller {
                     return this.comms.emailSend(event.parsedBody.identity, this.$environment.EMAIL_FROM, 'Your Already a User!', YourAlreadyAUserHtml(emailData), YourAlreadyAUserText(emailData));
                 }
                 
-                emailData.token = this.$client.origin && event.parsedBody.registerRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.registerRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HOST_ADDRESS + '/account/register/' + data
+                emailData.token = this.$client.origin && event.parsedBody.registerRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/#' + event.parsedBody.registerRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HOST_ADDRESS + '/account/register/' + data
                 return this.comms.emailSend(event.parsedBody.identity, this.$environment.EMAIL_FROM, 'Welcome Abord', RegistrationHtml(emailData), RegistrationText(emailData));
             })
             .then(() => {             
@@ -128,11 +121,17 @@ class Registration extends Controller {
             })
             .then(() => 'Registration sent')
             .catch((error) => {
-                console.log(error);
                 if (error.name === 'RestError') throw error;
                 throw new RestError('Could not send registration', 400);
             });
     }
+
+	/**
+	 * @public @static @get get
+	 * @desciption Get the access level for the post method. All methods are restricted by default.
+	 * @return {Object} Object of access levels for methods
+	 */
+    static get patch() { return 'public' }
 
     /**
      * @public @method patch
@@ -178,7 +177,7 @@ class Registration extends Controller {
                         systemUrl: this.$environment.HOST_ADDRESS,
                         identity: reg.identity,
                         identityType: reg.identity_type,
-                        token: this.$client.origin && event.parsedBody.activateRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.activateRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HOST_ADDRESS + '/account/register/' + data
+                        token: this.$client.origin && event.parsedBody.activateRoute ? this.$client.origin.replace(/^\/|\/$/g, '') + '/#' + event.parsedBody.activateRoute.replace(/^\/|\/$/g, '') + '/' + data : this.$environment.HOST_ADDRESS + '/account/register/' + data
                     };
 
                     return this.comms.emailSend(configAdmin.email, this.$environment.EMAIL_FROM, 'Registration Activate', RegistrationActivateHtml(emailData), RegistrationActivateText(emailData));

@@ -67,9 +67,9 @@ class Organisation extends Controller {
 		this.$services.auth.isPermitted('api.identity.organisation.system', 'read,write');
 
 		let organisation = new OrganisationModel();
-		let mapped = organisation.mapDataToColumn(event.parsedBody);
 
-		return organisation.insert(mapped, '*')
+		return Promise.resolve().then(() => organisation.mapDataToColumn(event.parsedBody))
+			.then((mapped) => organisation.insert(mapped, '*'))
 			.then((orgs) => ({
 				id: orgs[0].id,
 				active: orgs[0].active,
@@ -78,7 +78,8 @@ class Organisation extends Controller {
 				description: orgs[0].description
 			}))
 			.catch((error) => { 
-				throw new RestError({message: 'Invalid data, could not add record', ...organisation.parseError(error)}, 400);
+				if (error.name === 'SystemError') throw new RestError(error, 400);
+				throw error;
 			});
 	}
 
@@ -172,7 +173,7 @@ class Organisation extends Controller {
 			.then(() => 'Deleted record')
 			.catch((error) => {
 				if (error.name === 'RestError') throw error;
-				throw new RestError('Invalid request, please use a valid id to delete this resource', 400);
+				throw new RestError('Invalid request, please use a valid ID to delete this resource', 400);
 			});
 	}
 }

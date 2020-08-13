@@ -29,10 +29,11 @@ class DataTools {
 			case 'integer': return typeof data === 'number' && data % 1 === 0;
 			case 'float': return typeof data === 'number' && data % 1 !== 0;
 			case 'uuid': return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data);
-			case 'date': return;
+			case 'date': return !!(new Date(data));
 			case 'datetime': return typeof data === 'string' && !isNaN(Date.parse(data));
 			case 'enum': return typeof data === 'string' && type.indexOf('[' + data + ']') >= 0;
 			case 'json':
+			case 'jsonb':
 				try { return typeof data === 'string' && JSON.parse(data) }
 				catch { return false }
 			case 'cidr':

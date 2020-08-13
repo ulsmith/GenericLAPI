@@ -18,7 +18,7 @@ Globals:
         # Generic
         VERSION: 0.0.1
         MODE: development
-        CORS_WHITELIST: 'http://project7.net:8082,http://192.168.1.99:8082,http://localhost:8082,http://localhost:8081,http://127.0.0.1:8081,http://docker.local' 
+        CORS_LIST: 'http://project7.net:8082,http://192.168.1.99:8082,http://localhost:8082,http://localhost:8081,http://127.0.0.1:8081,http://docker.local' 
         HOST_NAME: 'GenericLAPI'
         HOST_ADDRESS: 'http://localhost:3000'
         
@@ -30,16 +30,13 @@ Globals:
         ACTIVATE_EXPIRE_SECONDS: 604800
         
         # Email (using SES, just set from account)
-        EMAIL_FROM: 'no.reply@dbduck.net'
+        EMAIL_FROM: 'no....@....net'
+        EMAIL_TO: 'i...@....net'
         
         # DB
         KNEX_ENGINE: 'postgres'
-        # KNEX_HOST: 'pg...om'
-        # KNEX_HOST: '192.168.1.15'
         KNEX_HOST: '192.168.1.99'
         KNEX_PORT: 5431
-        # KNEX_DATABASE: 'generic'
-        # KNEX_DATABASE: 'test'
         KNEX_DATABASE: 'ddatabase_name'
         KNEX_USERNAME: 'postgres'
         KNEX_PASSWORD: 'nl.....2DD'
@@ -47,6 +44,27 @@ Globals:
         USER_BASIC_USER_GROUP_ID: 2
 
 Resources:
+  Email:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 3
+      Timeout: 30
+      VpcConfig:
+        # SG Private with internet access
+        SecurityGroupIds:
+          - sg-0d7...e0
+        # Core A/B subnets with routing for NAT internet access
+        SubnetIds:
+          - subnet-033...9
+          - subnet-08...1f
+      Role: !GetAtt LambdaEmailRole.Arn
+      Events:
+        ContactUsPost:
+          Type: Api
+          Properties:
+            Path: /email/contact-us
+            Method: post
+
   Account:
     Type: AWS::Serverless::Function
     Properties:
@@ -125,7 +143,7 @@ Resources:
         IdentityOrganisationAny:
           Type: Api
           Properties:
-            Path: /identity/organisation/{uuid}
+            Path: /identity/organisation/{id}
             Method: any
         IdentityUserPost:
           Type: Api
@@ -135,7 +153,7 @@ Resources:
         IdentityUserAny:
           Type: Api
           Properties:
-            Path: /identity/user/{uuid}
+            Path: /identity/user/{id}
             Method: any
         IdentityUsersGet:
           Type: Api
@@ -214,7 +232,7 @@ Resources:
             Path: /{error+}
             Method: any
 
-  LambdaAccountRole:
+  LambdaEmailRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -240,4 +258,13 @@ Resources:
             - ec2:DescribeNetworkInterfaces
             - ec2:DetachNetworkInterface
             - ec2:DeleteNetworkInterface
+            - sns:Publish
+            - sqs:SendMessage
+            - sqs:GetQueueUrl
+            - sqs:ListQueues
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            - lambda:InvokeFunction
+            - lambda:InvokeAsync
             Resource: '*'

@@ -33,15 +33,28 @@ class Auth extends Middleware {
      * @param {Object} context The lambda context
      */
 	in(event, context) {
+		// is this an internal message from aws?
+		if (event.messageSource) {
+			// incoming only
+			if (this.$client.origin) throw new RestError('Origin cannot be set on message, access denied', 401);
+
+			// public access, do not authorize
+			if (event.controller.access !== event.messageSource.join(':')) throw new RestError('No access to this function for [' + event.messageSource.join(':') + '], access denied', 401);
+
+			return;
+		}
+
+		// API GATEWAY API REQUEST
+		
 		// incoming only
 		if (!this.$client.origin) throw new RestError('Origin is not set, access denied', 401);
 
 		// origin failed to auth to white list
-		if (this.$environment.CORS_WHITELIST.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
+		if (this.$environment.CORS_LIST.replace(' ', '').split(',').indexOf(this.$client.origin) < 0) throw new RestError('Origin is not allowed, access denied', 401);
 
 		// public access, do not authorize
 		if (event.controller.access === 'public') return;
-		
+
 		// missing token
 		if (!event.headers.Authorization) throw new RestError('Missing Authorization Token, invalid', 401);
 

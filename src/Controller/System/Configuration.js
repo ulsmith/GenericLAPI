@@ -92,7 +92,6 @@ class Configuration extends Controller {
 			.then((row) => configuration.update(row.id, { data: event.parsedBody }, '*'))
 			.then((rows) => rows[0].data)
 			.catch((error) => {
-				console.log(error);
 				if (error.name === 'RestError') throw error;
 				throw new RestError('Invalid request, could not update record', 400);
 			});

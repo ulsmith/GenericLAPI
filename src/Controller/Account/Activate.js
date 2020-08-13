@@ -57,12 +57,13 @@ class Activate extends Controller {
                 if (!usr || !usr.id) throw new RestError('We could not activate this user, please try again.', 401);
                 return usr;
             })
-            .then((usr) => userModel.update(usr.id, { active: true }))
-            .then(() => {
+            .then((usr) => userModel.update(usr.id, { active: true }, '*'))
+            .then((usrs) => {
                 // send email out
                 let emailData = {
                     systemName: this.$environment.HOST_NAME,
                     systemUrl: this.$environment.HOST_ADDRESS,
+                    name: usrs[0].name,
                     identity: key,
                     identityType: 'email'
                 };
@@ -71,7 +72,6 @@ class Activate extends Controller {
             })
             .then(() => 'User Activated')
             .catch((error) => {
-                console.log(error);
                 if (error.name === 'RestError') throw error;
                 else if (error.name === 'TokenExpiredError') throw new RestError('Activate token expired', 401);
                 throw new RestError('Activate activation failed', 400);

@@ -19,9 +19,9 @@ class Users extends Controller {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
     /**
      * @public @method get
@@ -33,15 +33,11 @@ class Users extends Controller {
 	get(event, context) {
 		// check permissions for access, throws rest error on failure.
 		this.$services.auth.isPermitted('api.identity.user', 'read');
-
+		
 		let user = new UserModel();
-
+		
 		return user.getAllDetails()
 			.then((users) => {
-				// empty
-				if (users && users.length < 0) return usr;
-
-				// only system access allowed for this
 				this.$services.auth.isPermitted('api.identity.user.system', 'read');
 
 				return users;

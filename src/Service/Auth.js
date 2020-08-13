@@ -5,6 +5,7 @@ const RestError = require('../System/RestError.js');
 const Crypto = require('../Library/Crypto.js');
 const UserModel = require('../Model/DatabaseName/Identity/User.js');
 const UserAccountModel = require('../Model/DatabaseName/Identity/UserAccount.js');
+const UserGroupModel = require('../Model/DatabaseName/Identity/UserGroup.js');
 const JWT = require('jsonwebtoken');
 
 /**
@@ -52,10 +53,10 @@ class Auth extends Service {
 				if (!user) throw new RestError('Login details incorrect, please try again.', 401);
 				if (user.password !== Crypto.passwordHash(password, user.password.substring(0, user.password.length / 2))) throw new RestError('Login details incorrect, please try again.', 401);
 				if (!user.active) throw new RestError('User is not active, please try again later.', 401);
-
+				
 				return user;
 			})
-			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({ user: user, orgs: orgs })))
+			.then((user) => userModel.getUserOrganisations(user.id).then((orgs) => ({user: user, orgs: orgs})))		
 			.then((userOrgs) => {
 				let org = userOrgs.orgs[0];
 
@@ -79,14 +80,14 @@ class Auth extends Service {
 				// update user, get permissions for UI and return token, only one org so must be that one
 				let date = new Date();
 				return userAccountModel
-					.update(userOrgs.user.id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent, ip_address: ip })
+					.update(userOrgs.user.user_account_id, { login_current: date, login_previous: userOrgs.user.login_current, user_agent: userAgent, ip_address: ip })
 					.then(() => userModel.getPermisions('ui.', userOrgs.user.id, org ? org.id : undefined))
 					.then((perms) => {
 						// splice in identity
 						userOrgs.user.identity = identity;
 						userOrgs.user.identityType = identityType;
 
-						let result = {
+						let result = { 
 							token: this._generateJWT(userOrgs.user, org, userAgent),
 							user: {
 								id: userOrgs.user.id,
@@ -98,7 +99,7 @@ class Auth extends Service {
 							},
 							permissions: perms
 						};
-
+						
 						if (org) {
 							result.organisation = {
 								id: org.id,
@@ -125,17 +126,17 @@ class Auth extends Service {
 
 		try {
 			payload = this._verifyJWT(jwt);
-		} catch (error) {
+		} catch(error) {
 			if (error.name === 'TokenExpiredError') {
-				throw new RestError({
+				throw new RestError({ 
 					status: 'expired',
-					message: 'Authorization expired, please refresh expired token.',
-					method: 'POST',
+					message: 'Authorization expired, please refresh expired token.', 
+					method: 'POST', 
 					url: 'account/refresh',
-					body: { token: jwt }
+					body: {token: jwt}
 				}, 401);
 			}
-
+			
 			throw new RestError({
 				status: 'expired',
 				message: 'Authorization failed, please log in to authorize.',
@@ -152,23 +153,27 @@ class Auth extends Service {
 		let userModel = new UserModel();
 
 		return userModel.getAuthed(payload.userID)
+			.then((user) => {
+				if (user) return user;
+				throw new RestError('User not found, please try again.', 404);
+			})
 			.then((user) => userModel.getUserOrganisation(user.id, payload.organisationID).then((org) => ({ user: user, org: org })))
-			.then((userOrg) => userModel.getAllPermisions(userOrg.user.id, userOrg.org.id).then((perms) => ({ user: userOrg.user, org: userOrg.org, perms: perms })))
+			.then((userOrg) => userModel.getAllPermisions(userOrg.user.id, userOrg.org.id).then((perms) => ({ user: userOrg.user, org: userOrg.org, perms: perms})))
 			.then((userOrgPerms) => {
 				if (!userOrgPerms.user) throw new RestError('User not found, please try again.', 404);
 				if (!userOrgPerms.org) throw new RestError('Organisation not found, please try again later.', 404);
 				if (!userOrgPerms.user.active) throw new RestError('User is not active, please try again later.', 401);
-
+				
 				// cache user for system use
 				this.user = userOrgPerms.user;
 				this.user.identity = payload.userIdentity,
-					this.user.identityType = payload.userIdentityType,
-					this.organisation = userOrgPerms.org;
+				this.user.identityType = payload.userIdentityType,
+				this.organisation = userOrgPerms.org;
 				this.permissions = userOrgPerms.perms;
 				this.cache = {};
-
+				
 				// return basic user details when hit directly
-				return {
+				return { 
 					user: {
 						id: this.user.id,
 						name: this.user.name,
@@ -227,7 +232,7 @@ class Auth extends Service {
 
 		// no roles found
 		if (roles.length === 0) this.permissionDenied(role, type);
-
+		
 		// one role found
 		if (roles.length === 1) {
 			if (
@@ -239,7 +244,7 @@ class Auth extends Service {
 
 		// more than one role found
 		if (roles.length > 1) {
-			let reduced = roles.reduce((acc, cur) => ({ read: acc.read || cur.read, write: acc.write || cur.write, delete: acc.delete || cur.delete }));
+			let reduced = roles.reduce((acc, cur) => ({read: acc.read || cur.read, write: acc.write || cur.write, delete: acc.delete || cur.delete}));
 			if (
 				(types.length === 1 && !reduced[types[0].trim()])
 				|| (types.length === 2 && (!reduced[types[0].trim()] || !reduced[types[1].trim()]))

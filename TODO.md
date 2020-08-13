@@ -10,23 +10,9 @@
 * [DONE] Need to switch to method not allowed if route is reachable but not for that method, with a 405, push to application handler directly
 * [DONE] Fix the patch to orgs, should throw not found if the org not found.
 * [DONE] User management, registration, creation, activation.
+* [DONE] production messages not coming from form, logged in or not, they look like htey are going but dont go
+* [DONE] fix login timestamps in DB, not saving.
+* [DONE] create bounce and complaint features for handling SES feedback
 * look into oauth integration
-
-## endpoints
-
-* [DONE] RWD organisation
-* [DONE] RWD user
-* RWD department
-* RWD group
-* RWD role
-
-* RWD department to org
-* RWD user to department
-
-* RWD group to department
-* RWD group to user
-
-* RWD role to user
-* RWD role to department
-* RWD role to group
+* look into swagger integration
 

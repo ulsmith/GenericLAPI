@@ -342,7 +342,6 @@ class Crypto {
 		if (!JWT.verify(token, JWTKey, { algorithm: 'HS256' })) throw Error('Unable to verify token');
 		let decoded = JWT.decode(token, { complete: true });
 		if (decoded.payload.scope !== scope) throw Error('Unable to verify token scope');
-		console.log(333, decoded.payload)
 		return decoded.payload.key;
 	}
 }

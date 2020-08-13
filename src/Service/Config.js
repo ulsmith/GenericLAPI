@@ -33,7 +33,7 @@ class Config extends Service {
 		let configModel = new ConfigModel();
         return configModel.all().then((rows) => rows.reduce((a, c) => {
             let b = {};
-            b[c.key] = c.value;
+            b[c.name_unique] = c.data;
             return {...a, ...b};
         }, {})).then((configs) => this._cache = configs);
 	}
@@ -58,7 +58,7 @@ class Config extends Service {
 	set(key, value) {
         this._cache[key] = Object.assign({}, this._cache[key], value);
         let configModel = new ConfigModel();
-        return configModel.update({ key: key }, { value: this._cache[key] });
+        return configModel.update({ name_unique: key }, { data: this._cache[key] });
 	}
 }
 

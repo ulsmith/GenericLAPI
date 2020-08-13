@@ -2,6 +2,7 @@
 
 const aws = require('aws-sdk');
 const ses = new aws.SES({ region: 'eu-west-2' });
+const EmailBlockedModel = require('../Model/Dbduck/Public/EmailBlocked.js');
 
 /**
  * @namespace API/Library
@@ -30,24 +31,32 @@ class Comms {
 	 * @return {String} A hash of the string
 	 */
 	emailSend(to, from, subject, body, alt) {
-		const params = {
-			Destination: {
-				ToAddresses: typeof to === 'object' && to.length ? to : [to]
-			},
-			Message: {
-				Body: {
-					Html: { Charset: "UTF-8", Data: body },
-					Text: { Charset: "UTF-8", Data: alt }
-				},
-				Subject: { Charset: "UTF-8", Data: subject }
-			},
-			Source: from
-		};
+		const emailBlocked = new EmailBlockedModel();
 
-		return new Promise((res, rej) => {
-			ses.sendEmail(params, function (err, data) {
-				if (err) return rej('failed to send');
-				else res('sent successfully');
+		return emailBlocked.find({ 'email': to }).then((rows) => {
+			// do not send to blocked emails
+			if (rows[0] && rows[0].email === to) return 'Email blocked';
+
+			// send message as not blocked
+			const params = {
+				Destination: {
+					ToAddresses: typeof to === 'object' && to.length ? to : [to]
+				},
+				Message: {
+					Body: {
+						Html: { Charset: "UTF-8", Data: body },
+						Text: { Charset: "UTF-8", Data: alt }
+					},
+					Subject: { Charset: "UTF-8", Data: subject }
+				},
+				Source: from
+			};
+
+			return new Promise((res, rej) => {
+				ses.sendEmail(params, function (err, data) {
+					if (err) return rej(err);
+					else res('sent successfully');
+				});
 			});
 		});
 	}

@@ -71,7 +71,7 @@ class Reset extends Controller {
                 return usr;
             })
             .then((usr) => {
-                return userAccount.update(usr.id, {
+                return userAccount.update(usr.user_account_id, {
                     password_reminder: Crypto.encodeToken('reset', usr.id, this.$environment.HOST_ADDRESS, this.$client.origin, this.$environment.TOKEN_EXPIRE_SECONDS, this.$environment.JWT_KEY, this.$environment.AES_KEY),
                     password_reminder_sent: new Date()
                 }, ['password_reminder']).then((usa) => [usr, usa[0]]);
@@ -83,7 +83,7 @@ class Reset extends Controller {
                     expireTime: Number(this.$environment.TOKEN_EXPIRE_SECONDS) / 60,
                     name: data[0].name,
                     token: this.$client.origin && event.parsedBody.resetRoute
-                        ? this.$client.origin.replace(/^\/|\/$/g, '') + '/' + event.parsedBody.resetRoute.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
+                        ? this.$client.origin.replace(/^\/|\/$/g, '') + '/#' + event.parsedBody.resetRoute.replace(/^\/|\/$/g, '') + '/' + data[1].password_reminder
                         : this.$environment.HOST_ADDRESS + '/account/reset/' + data[1].password_reminder
                 };
 

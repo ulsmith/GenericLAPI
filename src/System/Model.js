@@ -169,9 +169,9 @@ class Model extends Core {
 		let clean = {};
 		for (const key in this.columns) {
 			let dataKey = DataTools.snakeToCamel(key);
-			if ((!data || data[dataKey] === undefined) && this.columns[key].required && !partial) throw new SystemError('Invalid data, required property [' + dataKey + '] missing from [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
+			if ((!data || data[dataKey] === undefined || data[dataKey] === null) && this.columns[key].required && !partial) throw new SystemError('Invalid data, required property [' + dataKey + '] missing from [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
 						
-			if (data[dataKey] !== undefined) {
+			if (data[dataKey] !== undefined && data[dataKey] !== null) {
 				if (!DataTools.checkType(data[dataKey], this.columns[key].type)) throw new SystemError('Invalid data, property [' + dataKey + '] type incorrect for [' + DataTools.snakeToCamel(this.table.split('.')[1]) + ']', this.columns);
 				clean[key] = data[dataKey];
 			}
@@ -210,8 +210,6 @@ class Model extends Core {
 		if (error.code == '22P02' && error.routine == 'string_to_uuid') return { error: 'invalid data', detail: 'uuid' };
 		if (error.code == '23505') return { error: 'not unique', detail: error.detail.split(')=(')[0].split('(')[1] };
 
-		// NOTE: remove me
-		// console.log(error.code, error.message, error.detail);
 		return { error: 'unknown' };
 	}
 

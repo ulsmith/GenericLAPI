@@ -20,9 +20,9 @@ class User extends Controller {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
     /**
      * @public @method get
@@ -48,9 +48,9 @@ class User extends Controller {
 				// not same user, need to check permissions further, related org or all permission
 				if (usr.organisation && usr.organisation.indexOf(this.$services.auth.organisation.id) >= 0) this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read');
 				else this.$services.auth.isPermitted('api.identity.user.system', 'read');
-
+				
 				return usr;
-			})
+			})	
 			.then((usr) => ({
 				id: usr.id,
 				name: usr.name,
@@ -75,12 +75,12 @@ class User extends Controller {
 
 		// check permissions for access, throws rest error on failure.
 		this.$services.auth.isPermitted('api.identity.user.organisation/system', 'read,write');
-
+		
 		let user = new UserModel();
 
 		// hash the password
 		if (event.parsedBody.userAccount && event.parsedBody.userAccount.password) event.parsedBody.userAccount.password = Crypto.passwordHash(event.parsedBody.userAccount.password);
-
+		
 		// add a new user, with all meta tables, handle any system errors
 		return user.add(event.parsedBody).catch((error) => {
 			if (error.name === 'SystemError') throw new RestError(error, 400);
@@ -118,7 +118,7 @@ class User extends Controller {
 				else this.$services.auth.isPermitted('api.identity.user.system', 'read,write');
 
 				return usr;
-			})
+			})				
 			.then((usr) => user.edit(usr.id, event.parsedBody))
 			.catch((error) => {
 				if (error.name === 'SystemError') throw new RestError(error, 400);
@@ -153,7 +153,7 @@ class User extends Controller {
 				else this.$services.auth.isPermitted('api.identity.user.system', 'write');
 
 				return usr;
-			})
+			})			
 			.then((usr) => user.edit(usr.id, event.parsedBody, true))
 			.then(() => 'Updated record')
 			.catch((error) => {
@@ -189,7 +189,7 @@ class User extends Controller {
 				else this.$services.auth.isPermitted('api.identity.user.system', 'delete');
 
 				return usr;
-			})
+			})	
 			.then((usr) => user.delete(usr.id))
 			.then(() => 'Deleted record')
 			.catch((error) => {
