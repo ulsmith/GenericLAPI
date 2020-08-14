@@ -19,14 +19,14 @@
  * ]
  * 
  * @example ./migrate/optional-sub-folder/unique_name_for_migration.sql
- * -- @type postgres --
- * -- @database air_client --
- * -- @name test --
- * -- @author Paul Smith --
- * -- @copywrite Answers in Retirement --
- * -- @date 2020-06-29 --
+ * -- @type postgres
+ * -- @database air_client
+ * -- @name test
+ * -- @author Paul Smith
+ * -- @copywrite Answers in Retirement
+ * -- @date 2020-06-29
  * 
- * -- @up --
+ * -- @up
  * 
  * BEGIN;
  * 
@@ -44,7 +44,7 @@
  * 
  * COMMIT;
  * 
- * -- @down --
+ * -- @down
  * 
  * BEGIN;
  * 
@@ -229,14 +229,14 @@ class Migrate {
 				for await (const file of files) {
 					// check file not ran against db
 					const fd = fs.readFileSync(file, 'utf8');
-					const fdMeta = fd.split('-- @up --')[0];
-					const fdUp = fd.split('-- @up --')[1].split('-- @down --')[0];
-					const fdDown = fd.split('-- @up --')[1].split('-- @down --')[1];
+					const fdMeta = fd.split('-- @up')[0];
+					const fdUp = fd.split('-- @up')[1].split('-- @down')[0];
+					const fdDown = fd.split('-- @up')[1].split('-- @down')[1];
 
 					// check timestamp and database name
 					try {
-						const dbName = fdMeta.match("-- @database (.*) --")[1];
-						const dbTimestamp = fdMeta.match("-- @timestamp (.*) --")[1];
+						const dbName = fdMeta.match("-- @database (.*)")[1];
+						const dbTimestamp = fdMeta.match("-- @timestamp (.*)")[1];
 						if (!database.database) throw Error('Cannot resolve database name in file [' + file + ']');
 						if (database.database !== dbName) continue;
 						if (file.indexOf(dbTimestamp) < 0) throw Error('Timestamp missmatch between filename and file meta data [' + file + ']');
@@ -325,12 +325,12 @@ class Migrate {
 	
 				// check we have a database, up, down and begin commit in file
 				try {
-					const dbName = text.match("-- @database (.*) --");
-					const dbUp = text.match("-- @up --");
-					const dbDown = text.match("-- @down --");
+					const dbName = text.match("-- @database (.*)");
+					const dbUp = text.match("-- @up");
+					const dbDown = text.match("-- @down");
 					if (!dbName || dbName[1].length < 2) throw Error('Cannot resolve database name in file [' + file + ']');
-					if (!dbUp || dbUp[0] !== '-- @up --') throw Error('Cannot find \'-- @up --\' section in migrate file [' + file + ']');
-					if (!dbDown || dbDown[0] !== '-- @down --') throw Error('Cannot find \'-- @down --\' section in migrate file [' + file + ']');
+					if (!dbUp || dbUp[0] !== '-- @up') throw Error('Cannot find \'-- @up\' section in migrate file [' + file + ']');
+					if (!dbDown || dbDown[0] !== '-- @down') throw Error('Cannot find \'-- @down\' section in migrate file [' + file + ']');
 				} catch (error) {
 					console.log(error.message);
 					return;
@@ -338,7 +338,7 @@ class Migrate {
 	
 				const data = fs.readFileSync(file);
 				const fd = fs.openSync(file, 'w+')
-				const insert = new Buffer.from(`-- @timestamp ${timestamp} --\n`)
+				const insert = new Buffer.from(`-- @timestamp ${timestamp}\n`)
 				fs.writeSync(fd, insert, 0, insert.length, 0)
 				fs.writeSync(fd, data, 0, data.length, insert.length)
 				fs.close(fd, (err) => { if (err) throw err });
@@ -388,14 +388,14 @@ class Migrate {
 
 			// check file not ran against db
 			const fd = fs.readFileSync(file, 'utf8');
-			const fdMeta = fd.split('-- @parse --')[0];
-			const fdParse = fd.split('-- @parse --')[1];
+			const fdMeta = fd.split('-- @parse')[0];
+			const fdParse = fd.split('-- @parse')[1];
 
 			// check timestamp and database name
 			let dbName, mgName;
 			try {
-				dbName = fdMeta.match("-- @database (.*) --")[1];
-				mgName = fdMeta.match("-- @name (.*) --")[1];
+				dbName = fdMeta.match("-- @database (.*)")[1];
+				mgName = fdMeta.match("-- @name (.*)")[1];
 				if (!database.database) throw Error('Cannot resolve database name in file [' + file + ']');
 				if (database.database !== dbName) throw Error('Cannot parse SQL against "' + database.database + '" database name in file is "' + dbName + '"');
 				if (!mgName) throw Error('Cannot resolve migration name in file [' + file + ']');
@@ -461,16 +461,16 @@ class Migrate {
 				for await (const file of files) {
 					// check file not ran against db
 					const fd = fs.readFileSync(file, 'utf8');
-					const fdMeta = fd.split('-- @up --')[0];
-					const fdUp = fd.split('-- @up --')[1].split('-- @down --')[0];
-					const fdDown = fd.split('-- @up --')[1].split('-- @down --')[1];
+					const fdMeta = fd.split('-- @up')[0];
+					const fdUp = fd.split('-- @up')[1].split('-- @down')[0];
+					const fdDown = fd.split('-- @up')[1].split('-- @down')[1];
 
 					// check timestamp and database name
 					let dbName, dbTimestamp, mgName;
 					try {
-						dbName = fdMeta.match("-- @database (.*) --")[1];
-						dbTimestamp = fdMeta.match("-- @timestamp (.*) --")[1];
-						mgName = fdMeta.match("-- @name (.*) --")[1];
+						dbName = fdMeta.match("-- @database (.*)")[1];
+						dbTimestamp = fdMeta.match("-- @timestamp (.*)")[1];
+						mgName = fdMeta.match("-- @name (.*)")[1];
 						if (!database.database) throw Error('Cannot resolve database name in file [' + file + ']');
 						if (database.database !== dbName) continue;
 						if (file.indexOf(dbTimestamp) < 0) throw Error('Timestamp missmatch between filename and file meta data [' + file + ']');
@@ -638,15 +638,15 @@ class Migrate {
 				for await (const file of files) {
 					// check file not ran against db
 					const fd = fs.readFileSync(file, 'utf8');
-					const fdMeta = fd.split('-- @up --')[0];
-					const fdDown = fd.split('-- @up --')[1].split('-- @down --')[1];
+					const fdMeta = fd.split('-- @up')[0];
+					const fdDown = fd.split('-- @up')[1].split('-- @down')[1];
 
 					// check timestamp and database name
 					let dbName, dbTimestamp, mgName;
 					try {
-						dbName = fdMeta.match("-- @database (.*) --")[1];
-						dbTimestamp = fdMeta.match("-- @timestamp (.*) --")[1];
-						mgName = fdMeta.match("-- @name (.*) --")[1];
+						dbName = fdMeta.match("-- @database (.*)")[1];
+						dbTimestamp = fdMeta.match("-- @timestamp (.*)")[1];
+						mgName = fdMeta.match("-- @name (.*)")[1];
 						if (!database.database) throw Error('Cannot resolve database name in file [' + file + ']');
 						if (database.database !== dbName) continue;
 						if (file.indexOf(dbTimestamp) < 0) throw Error('Timestamp missmatch between filename and file meta data [' + file + ']');

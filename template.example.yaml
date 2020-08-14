@@ -78,7 +78,7 @@ Resources:
         SubnetIds:
           - subnet-03...d9
           - subnet-087...81f
-      Role: !GetAtt LambdaAccountRole.Arn
+      Role: !GetAtt LambdaEmailRole.Arn
       Events:
         AccountAuthenticatePost:
           Type: Api
