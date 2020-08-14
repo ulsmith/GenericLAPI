@@ -120,7 +120,7 @@ function request(controller, event, context) {
 		process.__client = { origin: event.headers.Origin };
 
 		process.__services = {
-			knex: { dbduck: new KnexService() },
+			knex: { database_name: new KnexService() },
 			auth: new AuthService(),
 			config: new ConfigService()
 		};
