@@ -152,6 +152,7 @@ class User extends Model {
 				'user.id',
 				'user.name',
 				'user.active',
+				'user_account.id AS user_account_id',
 				'user_account.user_agent',
 				'user_account.login_current',
 				'user_account.login_previous'
@@ -191,6 +192,7 @@ class User extends Model {
 				'user.id',
 				'user.name',
 				'user.active',
+				'user_account.id AS user_account_id',
 				'user_account.password',
 				'user_account.login_current',
 				'user_account.login_previous',
