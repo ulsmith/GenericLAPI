@@ -17,8 +17,8 @@ class EmailBlocked extends Model {
 	 * @public @method constructor
 	 * @description Base method when instantiating class
 	 */
-    constructor() {
-		super('dbduck', 'public.email_blocked');
+	constructor() {
+		super('database_name', 'public.email_blocked');
 	}
 }
 
