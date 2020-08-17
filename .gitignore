@@ -6,7 +6,7 @@ template.production.*
 packaged.template.*
 node_modules
 package-lock.json
-migrate.json
-migrate.testing.json
-migrate.staging.json
-migrate.production.json
+migration.json
+migration.testing.json
+migration.staging.json
+migration.production.json

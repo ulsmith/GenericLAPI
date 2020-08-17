@@ -16,10 +16,10 @@
 		"deploy:staging": "sam deploy --template-file packaged.template.staging.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
 		"package:production": "sam package --template-file template.production.yaml --s3-bucket ?????-cloudformation-build --output-template-file packaged.template.production.yaml",
 		"deploy:production": "sam deploy --template-file packaged.template.production.yaml --stack-name ?????-generic-api --capabilities CAPABILITY_IAM --region eu-west-2",
-		"migrate": "node migrate.mjs",
-		"migrate:testing": "SERVER=testing node migrate.mjs",
-		"migrate:staging": "SERVER=staging node migrate.mjs",
-		"migrate:production": "SERVER=production node migrate.mjs"
+		"migration": "node src/Migration/migration.mjs",
+		"migration:testing": "SERVER=testing node src/Migration/migration.mjs",
+		"migration:staging": "SERVER=staging node src/Migration/migration.mjs",
+		"migration:production": "SERVER=production node src/Migration/migration.mjs"
 	},
 	"dependencies": {
 		"crypto": "^1.0.1",
